@@ -356,3 +356,7 @@ imgui.ini
 
 # CUDA PTX assembly
 *.ptx
+
+*.vcxproj
+CUDA-PathTracer/CUDA-PathTracer.vcxproj
+CUDA-PathTracer/CUDA-PathTracer.vcxproj.filters
