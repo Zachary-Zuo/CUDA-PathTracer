@@ -1,8 +1,10 @@
 #pragma once
+
 #include "imgui/imgui_impl_win32.h"
 #include "Window.h"
 #include "WindowTimer.h"
 #include "ImguiManager.h"
+#include "Graphics.h"
 
 class App
 {

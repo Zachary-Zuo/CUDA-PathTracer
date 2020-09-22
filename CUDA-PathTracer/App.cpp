@@ -27,9 +27,9 @@ App::App()
 
 void App::DoFrame()
 {
-	const auto dt = timer.Mark() * speed_factor;
-	wnd.Gfx().BeginFrame(0.07f, 0.0f, 0.12f);
-	
+	wnd.Gfx().BeginFrame(0.5f, 0.5f, 0.6f);
+	wnd.Gfx().Render();
+
 	// imgui window to control simulation speed
 	if (ImGui::Begin("Simulation Speed"))
 	{
