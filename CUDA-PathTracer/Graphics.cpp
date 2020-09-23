@@ -273,12 +273,10 @@ bool Graphics::findCUDADevice()
 
 	if (deviceCount == 0)
 	{
-		printf("> There are no device(s) supporting CUDA\n");
-		return false;
-	}
-	else
-	{
-		printf("> Found %d CUDA Capable Device(s)\n", deviceCount);
+		HRESULT hr = S_OK;
+		std::vector<std::string> info;
+		info.push_back("There are no device(s) supporting CUDA");
+		throw Graphics::HrException(__LINE__, __FILE__,hr,info);
 	}
 
 	return true;
@@ -294,7 +292,6 @@ bool Graphics::dynlinkLoadD3D11API()
 		return true;
 	}
 
-#if 1
 	// This may fail if Direct3D 11 isn't installed
 	s_hModD3D11 = LoadLibrary("d3d11.dll");
 
@@ -305,8 +302,10 @@ bool Graphics::dynlinkLoadD3D11API()
 	}
 	else
 	{
-		printf("\nLoad d3d11.dll failed\n");
-		fflush(0);
+		HRESULT hr = S_OK;
+		std::vector<std::string> info;
+		info.push_back("Load d3d11.dll failed");
+		throw Graphics::HrException(__LINE__, __FILE__, hr, info);
 	}
 
 	if (!sFnPtr_CreateDXGIFactory)
@@ -320,17 +319,7 @@ bool Graphics::dynlinkLoadD3D11API()
 
 		return (s_hModDXGI != NULL) && (s_hModD3D11 != NULL);
 	}
-
 	return (s_hModD3D11 != NULL);
-#else
-	sFnPtr_D3D11CreateDevice = (LPD3D11CREATEDEVICE)D3D11CreateDeviceAndSwapChain;
-	sFnPtr_D3D11CreateDeviceAndSwapChain = (LPD3D11CREATEDEVICEANDSWAPCHAIN)D3D11CreateDeviceAndSwapChain;
-	//sFnPtr_D3DX11CreateEffectFromMemory  = ( LPD3DX11CREATEEFFECTFROMMEMORY )D3DX11CreateEffectFromMemory;
-	sFnPtr_D3DX11CompileFromMemory = (LPD3DX11COMPILEFROMMEMORY)D3DX11CompileFromMemory;
-	sFnPtr_CreateDXGIFactory = (LPCREATEDXGIFACTORY)CreateDXGIFactory;
-	return true;
-#endif
-	return true;
 }
 
 bool Graphics::findDXDevice(char* dev_name)
@@ -345,8 +334,10 @@ bool Graphics::findDXDevice(char* dev_name)
 
 	if (!SUCCEEDED(hr))
 	{
-		printf("> No DXGI Factory created.\n");
-		return false;
+				HRESULT hr = S_OK;
+		std::vector<std::string> info;
+		info.push_back("Load d3d11.dll failed");
+		throw Graphics::HrException(__LINE__, __FILE__, hr, info);
 	}
 
 	UINT adapter = 0;
