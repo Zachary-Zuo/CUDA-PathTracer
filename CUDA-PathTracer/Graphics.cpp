@@ -248,9 +248,9 @@ bool Graphics::DrawScene(uint64_t& key)
 
 	HRESULT hr = S_OK;
 	// Clear the backbuffer
-	float ClearColor[4] = { 0.5f, 0.5f, 0.6f, 1.0f };
+	//float ClearColor[4] = { 0.5f, 0.5f, 0.6f, 1.0f };
 
-	pContext->ClearRenderTargetView(pTarget.Get(), ClearColor);
+	//pContext->ClearRenderTargetView(pTarget.Get(), ClearColor);
 
 	GFX_THROW_INFO(g_pKeyedMutex11->AcquireSync(key++, INFINITE));
 
@@ -261,7 +261,7 @@ bool Graphics::DrawScene(uint64_t& key)
 	GFX_THROW_INFO(g_pKeyedMutex11->ReleaseSync(key));
 
 	// Present the backbuffer contents to the display
-	pSwap->Present(1, 0);
+	//pSwap->Present(1, 0);
 
 	return true;
 }
@@ -334,7 +334,7 @@ bool Graphics::findDXDevice(char* dev_name)
 
 	if (!SUCCEEDED(hr))
 	{
-				HRESULT hr = S_OK;
+		HRESULT hr = S_OK;
 		std::vector<std::string> info;
 		info.push_back("Load d3d11.dll failed");
 		throw Graphics::HrException(__LINE__, __FILE__, hr, info);
