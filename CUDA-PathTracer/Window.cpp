@@ -54,6 +54,7 @@ Window::Window(int width, int height, const char* name)
 	wr.top = 20;
 	wr.bottom = height + wr.top;
 	if (AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, FALSE) == 0)
+	//if (AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, false) == 0)
 	{
 		throw CHWND_LAST_EXCEPT();
 	}
@@ -61,6 +62,8 @@ Window::Window(int width, int height, const char* name)
 	hWnd = CreateWindow(
 		WindowClass::GetName(), name,
 		WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,
+		/*WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,*/
+		//WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT, wr.right - wr.left, wr.bottom - wr.top,
 		nullptr, nullptr, WindowClass::GetInstance(), this
 	);
@@ -69,12 +72,13 @@ Window::Window(int width, int height, const char* name)
 	{
 		throw CHWND_LAST_EXCEPT();
 	}
+
+	pGfx = std::make_unique<Graphics>(hWnd, width, height);
 	// newly created windows start off as hidden
 	ShowWindow(hWnd, SW_SHOWDEFAULT);
 	// Init ImGui Win32 Impl
 	ImGui_ImplWin32_Init(hWnd);
 	// create graphics object
-	pGfx = std::make_unique<Graphics>(hWnd,width,height);
 }
 
 Window::~Window()
@@ -307,8 +311,65 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noe
 		break;
 	}
 	/************** END MOUSE MESSAGES **************/
-	}
+	/*
+	case WM_SIZE:
+	{
+		// Save the new client area dimensions.
+		width = LOWORD(lParam);
+		height = HIWORD(lParam);
+		if (Gfx().pDevice)
+		{
+			if (wParam == SIZE_MINIMIZED)
+			{
+				mAppPaused = true;
+				mMinimized = true;
+				mMaximized = false;
+			}
+			else if (wParam == SIZE_MAXIMIZED)
+			{
+				mAppPaused = false;
+				mMinimized = false;
+				mMaximized = true;
+				Gfx().OnResize(width, height);
+			}
+			else if (wParam == SIZE_RESTORED)
+			{
 
+				// Restoring from minimized state?
+				if (mMinimized)
+				{
+					mAppPaused = false;
+					mMinimized = false;
+					Gfx().OnResize(width, height);
+				}
+
+				// Restoring from maximized state?
+				else if (mMaximized)
+				{
+					mAppPaused = false;
+					mMaximized = false;
+					Gfx().OnResize(width, height);
+				}
+				else if (mResizing)
+				{
+					// If user is dragging the resize bars, we do not resize 
+					// the buffers here because as the user continuously 
+					// drags the resize bars, a stream of WM_SIZE messages are
+					// sent to the window, and it would be pointless (and slow)
+					// to resize for each WM_SIZE message received from dragging
+					// the resize bars.  So instead, we reset after the user is 
+					// done resizing the window and releases the resize bars, which 
+					// sends a WM_EXITSIZEMOVE message.
+				}
+				else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
+				{
+					Gfx().OnResize(width, height);
+				}
+			}
+		}
+	}
+	*/
+	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 

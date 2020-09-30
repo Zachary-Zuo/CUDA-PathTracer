@@ -80,11 +80,16 @@ private:
 #ifndef NDEBUG
 	DxgiInfoManager infoManager;
 #endif
+public:
 	Microsoft::WRL::ComPtr<ID3D11Device> pDevice;
+private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain> pSwap;
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> pContext;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDSV;
+	//Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDSV;
+public:
+	//ID3D11Device* GetD3D11Devece() { return pDevice.Get(); }
+	void OnResize(int width, int height);
 
 public:
 	void Render();
@@ -100,12 +105,10 @@ private:
 	ID3D11RasterizerState* g_pRasterState = nullptr;
 	ID3D11InputLayout* g_pLayout = nullptr;
 	IDXGIKeyedMutex* g_pKeyedMutex11;
-	bool DrawScene();
 	void Cleanup();
 	bool findCUDADevice();
 	static bool dynlinkLoadD3D11API();
 	bool findDXDevice(char* device_name);
-	bool DrawScene(uint64_t& key);
 	cudaStream_t cuda_stream;
 	char device_name[256];
 };
