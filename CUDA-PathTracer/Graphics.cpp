@@ -230,6 +230,7 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 
 	// init imgui d3d impl
 	ImGui_ImplDX11_Init(pDevice.Get(), pContext.Get());
+	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 }
 
 void Graphics::Render()

@@ -40,6 +40,9 @@ void App::DoFrame()
 	ImGui::End();
 	// imgui windows to control camera and light
 
+	bool imshow = true;
+	ImGui::ShowDemoWindow(&imshow);
+
 	// present
 	wnd.Gfx().EndFrame();
 }

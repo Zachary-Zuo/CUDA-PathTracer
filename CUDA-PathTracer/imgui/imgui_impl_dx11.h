@@ -3,6 +3,7 @@
 
 // Implemented features:
 //  [X] Renderer: User texture binding. Use 'ID3D11ShaderResourceView*' as ImTextureID. Read the FAQ about ImTextureID!
+//  [X] Renderer: Multi-viewport support. Enable with 'io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable'.
 //  [X] Renderer: Support for large meshes (64k+ vertices) with 16-bit indices.
 
 // You can copy and use unmodified imgui_impl_* files in your project. See main.cpp for an example of using this.
@@ -12,13 +13,16 @@
 #pragma once
 #include "../CasterLabWin.h"
 #include "../Graphics.h"
-#include "imgui.h"
+#include "imgui.h"      // IMGUI_IMPL_API
+
+struct ID3D11Device;
+struct ID3D11DeviceContext;
 
 IMGUI_IMPL_API bool     ImGui_ImplDX11_Init(ID3D11Device* device, ID3D11DeviceContext* device_context);
 IMGUI_IMPL_API void     ImGui_ImplDX11_Shutdown();
 IMGUI_IMPL_API void     ImGui_ImplDX11_NewFrame();
 IMGUI_IMPL_API void     ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data);
 
-// Use if you want to reset your rendering device without losing ImGui state.
+// Use if you want to reset your rendering device without losing Dear ImGui state.
 IMGUI_IMPL_API void     ImGui_ImplDX11_InvalidateDeviceObjects();
 IMGUI_IMPL_API bool     ImGui_ImplDX11_CreateDeviceObjects();
