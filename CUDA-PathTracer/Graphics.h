@@ -88,8 +88,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
 	//Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDSV;
 public:
-	//ID3D11Device* GetD3D11Devece() { return pDevice.Get(); }
-	void OnResize(int width, int height);
 
 public:
 	void Render();
