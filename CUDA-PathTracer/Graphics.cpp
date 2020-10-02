@@ -85,7 +85,7 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 
 	// create device and front/back buffers, and swap chain and rendering context
 	GFX_THROW_INFO(D3D11CreateDeviceAndSwapChain(
-		g_pCudaCapableAdapter,
+		m_pCudaCapableAdapter.Get(),
 		D3D_DRIVER_TYPE_UNKNOWN,//D3D_DRIVER_TYPE_HARDWARE
 		nullptr,
 		swapCreateFlags,
@@ -99,7 +99,7 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 		&pContext
 	));
 
-	g_pCudaCapableAdapter->Release();
+	//m_pCudaCapableAdapter->Release();
 
 	// Get the immediate DeviceContext
 	pDevice->GetImmediateContext(&pContext);
@@ -125,21 +125,20 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 	pContext->RSSetViewports(1u, &vp);
 
 
-
-	ID3DBlob* VS;
-	ID3DBlob* PS;
+	wrl::ComPtr<ID3DBlob> VS;
+	wrl::ComPtr<ID3DBlob> PS;
 	// Vertex shader
-	D3DReadFileToBlob(L"VertexShader.cso", &VS);
-	GFX_THROW_INFO(pDevice->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, &g_pVertexShader));
+	D3DReadFileToBlob(L"VertexShader.cso", VS.GetAddressOf());
+	GFX_THROW_INFO(pDevice->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf()));
 	// Let's bind it now : no other vtx shader will replace it...
-	pContext->VSSetShader(g_pVertexShader, NULL, 0);
+	pContext->VSSetShader(m_pVertexShader.Get(), NULL, 0);
 
 
 	// Pixel shader
-	D3DReadFileToBlob(L"PixelShader.cso", &PS);
-	GFX_THROW_INFO(pDevice->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), NULL, &g_pPixelShader));
+	D3DReadFileToBlob(L"PixelShader.cso", PS.GetAddressOf());
+	GFX_THROW_INFO(pDevice->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), NULL, m_pPixelShader.GetAddressOf()));
 	// Let's bind it now : no other pix shader will replace it...
-	pContext->PSSetShader(g_pPixelShader, NULL, 0);
+	pContext->PSSetShader(m_pPixelShader.Get(), NULL, 0);
 
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -148,9 +147,11 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
 
-	GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, NULL, &g_VertexBuffer));
+	GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, NULL, m_VertexBuffer.GetAddressOf()));
 
-	GFX_THROW_INFO(g_VertexBuffer->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&g_pKeyedMutex11));
+	GFX_THROW_INFO(m_VertexBuffer->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&m_pKeyedMutex11));
+	//GFX_THROW_INFO(m_VertexBuffer.As(&m_pKeyedMutex11));
+
 
 	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] =
 	{
@@ -158,17 +159,19 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
-	GFX_THROW_INFO(pDevice->CreateInputLayout(inputElementDescs, 2, VS->GetBufferPointer(), VS->GetBufferSize(), &g_pLayout));
+	GFX_THROW_INFO(pDevice->CreateInputLayout(inputElementDescs, 2, VS->GetBufferPointer(), VS->GetBufferSize(), m_pLayout.GetAddressOf()));
 
 	// Setup  Input Layout
-	pContext->IASetInputLayout(g_pLayout);
+	pContext->IASetInputLayout(m_pLayout.Get());
 
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
 
-	IDXGIResource1* pResource;
+	Microsoft::WRL::ComPtr<IDXGIResource1> pResource;
 	HANDLE sharedHandle;
-	g_VertexBuffer->QueryInterface(__uuidof(IDXGIResource1), (void**)&pResource);
+	//g_VertexBuffer->QueryInterface(__uuidof(IDXGIResource1), (void**)&pResource);
+	GFX_THROW_INFO(m_VertexBuffer.As(&pResource));
+
 	hr = pResource->GetSharedHandle(&sharedHandle);
 	if (!SUCCEEDED(hr))
 	{
@@ -178,7 +181,9 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 	d_VertexBufPtr = cudaImportVertexBuffer(sharedHandle, extMemory, width, height);
 	pResource->Release();
 
-	g_pKeyedMutex11->QueryInterface(__uuidof(IDXGIResource1), (void**)&pResource);
+	GFX_THROW_INFO(m_pKeyedMutex11->QueryInterface(__uuidof(IDXGIResource1), (void**)pResource.GetAddressOf()));
+	//GFX_THROW_INFO(m_pKeyedMutex11.As(&pResource));
+
 	pResource->GetSharedHandle(&sharedHandle);
 	// Import the D3D11 Keyed Mutex into CUDA
 	cudaImportKeyedMutex(sharedHandle, extSemaphore);
@@ -195,8 +200,8 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 	rasterizerState.ScissorEnable = false;
 	rasterizerState.MultisampleEnable = false;
 	rasterizerState.AntialiasedLineEnable = false;
-	pDevice->CreateRasterizerState(&rasterizerState, &g_pRasterState);
-	pContext->RSSetState(g_pRasterState);
+	pDevice->CreateRasterizerState(&rasterizerState, m_pRasterState.GetAddressOf());
+	pContext->RSSetState(m_pRasterState.Get());
 
 	// init imgui d3d impl
 	ImGui_ImplDX11_Init(pDevice.Get(), pContext.Get());
@@ -213,13 +218,14 @@ void Graphics::Render()
 	// Draw the scene using them
 	HRESULT hr = S_OK;
 
-	GFX_THROW_INFO(g_pKeyedMutex11->AcquireSync(key++, INFINITE));
+	GFX_THROW_INFO(m_pKeyedMutex11->AcquireSync(key++, INFINITE));
+	//GFX_THROW_INFO(m_pKeyedMutex11.Get()->AcquireSync(key++, INFINITE));
 
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	pContext->IASetVertexBuffers(0, 1, &g_VertexBuffer, &stride, &offset);
+	pContext->IASetVertexBuffers(0, 1, m_VertexBuffer.GetAddressOf(), &stride, &offset);
 	pContext->Draw(windowHeight * windowWidth, 0);
-	GFX_THROW_INFO(g_pKeyedMutex11->ReleaseSync(key));
+	GFX_THROW_INFO(m_pKeyedMutex11->ReleaseSync(key));
 }
 
 bool Graphics::findCUDADevice()
@@ -299,7 +305,7 @@ bool Graphics::findDXDevice(char* dev_name)
 
 	UINT adapter = 0;
 
-	for (; !g_pCudaCapableAdapter; ++adapter)
+	for (; !m_pCudaCapableAdapter; ++adapter)
 	{
 		// Get a candidate DXGI adapter
 		IDXGIAdapter1* pAdapter = NULL;
@@ -319,8 +325,8 @@ bool Graphics::findDXDevice(char* dev_name)
 		if (cudaSuccess == cuStatus)
 		{
 			// If so, mark it as the one against which to create our d3d11 device
-			g_pCudaCapableAdapter = pAdapter;
-			g_pCudaCapableAdapter->AddRef();
+			m_pCudaCapableAdapter = pAdapter;
+			m_pCudaCapableAdapter->AddRef();
 			cuda_dev = cuDevice;
 			printf("\ncuda device id selected = %d\n", cuda_dev);
 		}
@@ -332,14 +338,14 @@ bool Graphics::findDXDevice(char* dev_name)
 
 	pFactory->Release();
 
-	if (!g_pCudaCapableAdapter)
+	if (!m_pCudaCapableAdapter)
 	{
 		printf("> Found 0 D3D11 Adapater(s) /w Compute capability.\n");
 		return false;
 	}
 
 	DXGI_ADAPTER_DESC adapterDesc;
-	g_pCudaCapableAdapter->GetDesc(&adapterDesc);
+	m_pCudaCapableAdapter->GetDesc(&adapterDesc);
 	wcstombs(dev_name, adapterDesc.Description, 128);
 
 	checkCudaErrors(cudaSetDevice(cuda_dev));
@@ -418,13 +424,13 @@ void Graphics::OnResize(int width, int height)
 	checkCudaErrors(cudaDestroyExternalMemory(extMemory));
 	checkCudaErrors(cudaDestroyExternalSemaphore(extSemaphore));
 
-	g_pVertexShader->Release();
-	g_pPixelShader->Release();
-	g_VertexBuffer->Release();
+	//g_pVertexShader->Release();
+	//g_pPixelShader->Release();
+	//g_VertexBuffer->Release();
 
-	g_pRasterState->Release();
-	g_pLayout->Release();
-	g_pKeyedMutex11->Release();
+	//g_pRasterState->Release();
+	//g_pLayout->Release();
+	//g_pKeyedMutex11->Release();
 
 
 	// 释放渲染管线输出用到的相关资源
@@ -458,20 +464,20 @@ void Graphics::OnResize(int width, int height)
 	vp.TopLeftY = 0;
 	pContext->RSSetViewports(1u, &vp);
 
-	ID3DBlob* VS;
-	ID3DBlob* PS;
+	wrl::ComPtr<ID3DBlob> VS;
+	wrl::ComPtr<ID3DBlob> PS;
 	// Vertex shader
-	D3DReadFileToBlob(L"VertexShader.cso", &VS);
-	GFX_THROW_INFO(pDevice->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, &g_pVertexShader));
+	D3DReadFileToBlob(L"VertexShader.cso", VS.GetAddressOf());
+	GFX_THROW_INFO(pDevice->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf()));
 	// Let's bind it now : no other vtx shader will replace it...
-	pContext->VSSetShader(g_pVertexShader, NULL, 0);
+	pContext->VSSetShader(m_pVertexShader.Get(), NULL, 0);
 
 
 	// Pixel shader
-	D3DReadFileToBlob(L"PixelShader.cso", &PS);
-	GFX_THROW_INFO(pDevice->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), NULL, &g_pPixelShader));
+	D3DReadFileToBlob(L"PixelShader.cso", PS.GetAddressOf());
+	GFX_THROW_INFO(pDevice->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), NULL, m_pPixelShader.GetAddressOf()));
 	// Let's bind it now : no other pix shader will replace it...
-	pContext->PSSetShader(g_pPixelShader, NULL, 0);
+	pContext->PSSetShader(m_pPixelShader.Get(), NULL, 0);
 
 
 	D3D11_BUFFER_DESC bufferDesc;
@@ -481,9 +487,10 @@ void Graphics::OnResize(int width, int height)
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
 
-	GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, NULL, &g_VertexBuffer));
+	GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, NULL, m_VertexBuffer.GetAddressOf()));
 
-	GFX_THROW_INFO(g_VertexBuffer->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&g_pKeyedMutex11));
+	GFX_THROW_INFO(m_VertexBuffer->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&m_pKeyedMutex11));
+	//GFX_THROW_INFO(m_VertexBuffer.As(&m_pKeyedMutex11));
 
 	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] =
 	{
@@ -491,17 +498,19 @@ void Graphics::OnResize(int width, int height)
 		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
-	GFX_THROW_INFO(pDevice->CreateInputLayout(inputElementDescs, 2, VS->GetBufferPointer(), VS->GetBufferSize(), &g_pLayout));
+	GFX_THROW_INFO(pDevice->CreateInputLayout(inputElementDescs, 2, VS->GetBufferPointer(), VS->GetBufferSize(), m_pLayout.GetAddressOf()));
 
 	// Setup  Input Layout
-	pContext->IASetInputLayout(g_pLayout);
+	pContext->IASetInputLayout(m_pLayout.Get());
 
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
 
-	IDXGIResource1* pResource;
+	//IDXGIResource1* pResource;
+	wrl::ComPtr<IDXGIResource1>pResource;
 	HANDLE sharedHandle;
-	g_VertexBuffer->QueryInterface(__uuidof(IDXGIResource1), (void**)&pResource);
+	GFX_THROW_INFO(m_VertexBuffer->QueryInterface(__uuidof(IDXGIResource1), (void**)pResource.GetAddressOf()));
+	//GFX_THROW_INFO(m_VertexBuffer.As(&pResource));
 	hr = pResource->GetSharedHandle(&sharedHandle);
 	if (!SUCCEEDED(hr))
 	{
@@ -511,7 +520,8 @@ void Graphics::OnResize(int width, int height)
 	d_VertexBufPtr = cudaImportVertexBuffer(sharedHandle, extMemory, width, height);
 	pResource->Release();
 
-	g_pKeyedMutex11->QueryInterface(__uuidof(IDXGIResource1), (void**)&pResource);
+	GFX_THROW_INFO(m_pKeyedMutex11->QueryInterface(__uuidof(IDXGIResource1), (void**)pResource.GetAddressOf()));
+	//GFX_THROW_INFO(m_pKeyedMutex11.As(&pResource));
 	pResource->GetSharedHandle(&sharedHandle);
 	// Import the D3D11 Keyed Mutex into CUDA
 	cudaImportKeyedMutex(sharedHandle, extSemaphore);
@@ -528,8 +538,8 @@ void Graphics::OnResize(int width, int height)
 	rasterizerState.ScissorEnable = false;
 	rasterizerState.MultisampleEnable = false;
 	rasterizerState.AntialiasedLineEnable = false;
-	pDevice->CreateRasterizerState(&rasterizerState, &g_pRasterState);
-	pContext->RSSetState(g_pRasterState);
+	pDevice->CreateRasterizerState(&rasterizerState, m_pRasterState.GetAddressOf());
+	pContext->RSSetState(m_pRasterState.Get());
 }
 
 void Graphics::DrawIndexed(UINT count) noexcept(!IS_DEBUG)

@@ -95,16 +95,18 @@ public:
 	void Render();
 
 private:
-	IDXGIAdapter1* g_pCudaCapableAdapter = nullptr;  // Adapter to use
-	ID3D11VertexShader* g_pVertexShader;
-	ID3D11PixelShader* g_pPixelShader;
-	ID3D11Buffer* g_VertexBuffer;
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> m_pCudaCapableAdapter;
+	Microsoft::WRL::ComPtr<ID3D11VertexShader>m_pVertexShader;
+	Microsoft::WRL::ComPtr <ID3D11PixelShader>m_pPixelShader;
+	Microsoft::WRL::ComPtr <ID3D11Buffer>m_VertexBuffer;
+	Microsoft::WRL::ComPtr <ID3D11RasterizerState>m_pRasterState;
+	Microsoft::WRL::ComPtr <ID3D11InputLayout>m_pLayout;
+	IDXGIKeyedMutex *m_pKeyedMutex11;
+
 	Vertex* d_VertexBufPtr = NULL;
 	cudaExternalMemory_t extMemory;
 	cudaExternalSemaphore_t extSemaphore;
-	ID3D11RasterizerState* g_pRasterState = nullptr;
-	ID3D11InputLayout* g_pLayout = nullptr;
-	IDXGIKeyedMutex* g_pKeyedMutex11;
+
 	void Cleanup();
 	bool findCUDADevice();
 	static bool dynlinkLoadD3D11API();
