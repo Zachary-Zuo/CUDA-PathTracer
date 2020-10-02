@@ -30,26 +30,6 @@ namespace dx = DirectX;
 #pragma comment(lib,"d3d11.lib")
 #pragma comment(lib,"D3DCompiler.lib")
 
-static const char g_simpleShaders[] =
-"struct PSInput\n" \
-"{ \n" \
-"    float4 position : SV_POSITION;\n" \
-"    float4 color : COLOR; \n" \
-"};\n" \
-"PSInput VSMain(float3 position : POSITION, float4 color : COLOR)\n" \
-"{ \n" \
-"    PSInput result;\n" \
-"    result.position = float4(position, 1.0f); \n" \
-"    // Pass the color through without modification. \n" \
-"    result.color = color; \n" \
-"    return result; \n" \
-"} \n" \
-"float4 PSMain(PSInput input) : SV_TARGET \n" \
-"{ \n" \
-"    return input.color; \n" \
-"} \n" \
-;
-
 Graphics::Graphics(HWND hWnd, int width, int height)
 {
 
@@ -148,30 +128,18 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 
 	ID3DBlob* VS;
 	ID3DBlob* PS;
-	ID3DBlob* pErrorMsgs;
 	// Vertex shader
-	{
-		GFX_THROW_INFO(D3DCompile(g_simpleShaders, strlen(g_simpleShaders), "Memory", NULL, NULL, "VSMain", "vs_4_0", 0/*Flags1*/, 0/*Flags2*/, &VS, &pErrorMsgs));
+	D3DReadFileToBlob(L"VertexShader.cso", &VS);
+	GFX_THROW_INFO(pDevice->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, &g_pVertexShader));
+	// Let's bind it now : no other vtx shader will replace it...
+	pContext->VSSetShader(g_pVertexShader, NULL, 0);
 
-		if (FAILED(hr))
-		{
-			const char* pStr = (const char*)pErrorMsgs->GetBufferPointer();
-			printf(pStr);
-		}
 
-		GFX_THROW_INFO(pDevice->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, &g_pVertexShader));
-
-		// Let's bind it now : no other vtx shader will replace it...
-		pContext->VSSetShader(g_pVertexShader, NULL, 0);
-	}
 	// Pixel shader
-	{
-		GFX_THROW_INFO(D3DCompile(g_simpleShaders, strlen(g_simpleShaders), "Memory", NULL, NULL, "PSMain", "ps_4_0", 0/*Flags1*/, 0/*Flags2*/, &PS, &pErrorMsgs));
-
-		GFX_THROW_INFO(pDevice->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), NULL, &g_pPixelShader));
-		// Let's bind it now : no other pix shader will replace it...
-		pContext->PSSetShader(g_pPixelShader, NULL, 0);
-	}
+	D3DReadFileToBlob(L"PixelShader.cso", &PS);
+	GFX_THROW_INFO(pDevice->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), NULL, &g_pPixelShader));
+	// Let's bind it now : no other pix shader will replace it...
+	pContext->PSSetShader(g_pPixelShader, NULL, 0);
 
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -492,30 +460,19 @@ void Graphics::OnResize(int width, int height)
 
 	ID3DBlob* VS;
 	ID3DBlob* PS;
-	ID3DBlob* pErrorMsgs;
 	// Vertex shader
-	{
-		GFX_THROW_INFO(D3DCompile(g_simpleShaders, strlen(g_simpleShaders), "Memory", NULL, NULL, "VSMain", "vs_4_0", 0/*Flags1*/, 0/*Flags2*/, &VS, &pErrorMsgs));
+	D3DReadFileToBlob(L"VertexShader.cso", &VS);
+	GFX_THROW_INFO(pDevice->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, &g_pVertexShader));
+	// Let's bind it now : no other vtx shader will replace it...
+	pContext->VSSetShader(g_pVertexShader, NULL, 0);
 
-		if (FAILED(hr))
-		{
-			const char* pStr = (const char*)pErrorMsgs->GetBufferPointer();
-			printf(pStr);
-		}
 
-		GFX_THROW_INFO(pDevice->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, &g_pVertexShader));
-
-		// Let's bind it now : no other vtx shader will replace it...
-		pContext->VSSetShader(g_pVertexShader, NULL, 0);
-	}
 	// Pixel shader
-	{
-		GFX_THROW_INFO(D3DCompile(g_simpleShaders, strlen(g_simpleShaders), "Memory", NULL, NULL, "PSMain", "ps_4_0", 0/*Flags1*/, 0/*Flags2*/, &PS, &pErrorMsgs));
+	D3DReadFileToBlob(L"PixelShader.cso", &PS);
+	GFX_THROW_INFO(pDevice->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), NULL, &g_pPixelShader));
+	// Let's bind it now : no other pix shader will replace it...
+	pContext->PSSetShader(g_pPixelShader, NULL, 0);
 
-		GFX_THROW_INFO(pDevice->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), NULL, &g_pPixelShader));
-		// Let's bind it now : no other pix shader will replace it...
-		pContext->PSSetShader(g_pPixelShader, NULL, 0);
-	}
 
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
