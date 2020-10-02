@@ -28,7 +28,6 @@ App::App()
 void App::DoFrame()
 {
 	wnd.Gfx().BeginFrame(0.5f, 0.5f, 0.6f);
-	wnd.Gfx().Render();
 
 	// imgui window to control simulation speed
 	if (ImGui::Begin("Simulation Speed"))

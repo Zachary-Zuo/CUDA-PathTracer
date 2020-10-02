@@ -75,8 +75,6 @@ public:
     void EnableImgui() noexcept;
     void DisableImgui() noexcept;
     bool IsImguiEnabled() const noexcept;
-    void Render();
-    void Cleanup();
     bool findCUDADevice();
     static bool dynlinkLoadD3D11API();
     bool findDXDevice(char* device_name);

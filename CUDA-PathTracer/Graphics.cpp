@@ -193,25 +193,6 @@ Graphics::Graphics(HWND hWnd, int width, int height)
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 }
 
-void Graphics::Render()
-{
-    static uint64_t key = 0;
-
-    // Launch cuda kernel to generate sinewave in vertex buffer
-    RunSineWaveKernel(m_extSemaphore, key, INFINITE, m_nWindowWidth, m_nWindowHeight, m_VertexBufPtr, m_cuda_stream);
-
-    // Draw the scene using them
-    HRESULT hr = S_OK;
-
-    GFX_THROW_INFO(m_pKeyedMutex11->AcquireSync(key++, INFINITE));
-
-    UINT stride = sizeof(Vertex);
-    UINT offset = 0;
-    m_pContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
-    m_pContext->Draw(m_nWindowHeight * m_nWindowWidth, 0);
-    GFX_THROW_INFO(m_pKeyedMutex11->ReleaseSync(key));
-}
-
 bool Graphics::findCUDADevice()
 {
     int deviceCount = 0;
@@ -341,16 +322,12 @@ bool Graphics::findDXDevice(char* dev_name)
     return true;
 }
 
-void Graphics::Cleanup()
-{
-    checkCudaErrors(cudaFree(m_VertexBufPtr));
-    checkCudaErrors(cudaDestroyExternalMemory(m_extMemory));
-    checkCudaErrors(cudaDestroyExternalSemaphore(m_extSemaphore));
-}
-
 Graphics::~Graphics()
 {
     ImGui_ImplDX11_Shutdown();
+    checkCudaErrors(cudaFree(m_VertexBufPtr));
+    checkCudaErrors(cudaDestroyExternalMemory(m_extMemory));
+    checkCudaErrors(cudaDestroyExternalSemaphore(m_extSemaphore));
 }
 
 void Graphics::EndFrame()
@@ -391,6 +368,22 @@ void Graphics::BeginFrame(float red, float green, float blue) noexcept
 
     const float color[] = { red, green, blue, 1.0f };
     m_pContext->ClearRenderTargetView(m_pTarget.Get(), color);
+
+
+    static uint64_t key = 0;
+    // Launch cuda kernel to generate sinewave in vertex buffer
+    RunSineWaveKernel(m_extSemaphore, key, INFINITE, m_nWindowWidth, m_nWindowHeight, m_VertexBufPtr, m_cuda_stream);
+
+    // Draw the scene using them
+    HRESULT hr = S_OK;
+
+    GFX_THROW_INFO(m_pKeyedMutex11->AcquireSync(key++, INFINITE));
+
+    UINT stride = sizeof(Vertex);
+    UINT offset = 0;
+    m_pContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
+    m_pContext->Draw(m_nWindowHeight * m_nWindowWidth, 0);
+    GFX_THROW_INFO(m_pKeyedMutex11->ReleaseSync(key));
 }
 
 void Graphics::DrawIndexed(UINT count) noexcept(!IS_DEBUG)
