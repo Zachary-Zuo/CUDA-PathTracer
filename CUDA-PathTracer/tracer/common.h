@@ -9,7 +9,7 @@
 #include <cuda.h>
 #include <curand.h>
 #include <curand_kernel.h>
-#include "cutil_math.h"
+//#include "cutil_math.h"
 #include <thrust\device_vector.h>
 #include <glm\glm.hpp>
 #include <glm\gtc\matrix_transform.hpp>

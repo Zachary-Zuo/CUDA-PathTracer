@@ -2,16 +2,16 @@
 #include "common.h"
 #include "..\tracer\imageio.h"
 
-using namespace std;
+//using namespace std;
 
 class Texture{
 public:
-	vector<uchar4> data;
+	std::vector<uchar4> data;
 	int width, height;
 
 public:
 	Texture(const char* file){
-		vector<float4> image;
+		std::vector<float4> image;
 		ImageIO::LoadTexture(file, width, height, true, image);
 		data.resize(width*height);
 		for (int i = 0; i < width * height; ++i){

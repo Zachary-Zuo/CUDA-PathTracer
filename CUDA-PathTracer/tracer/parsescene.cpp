@@ -10,6 +10,7 @@
 #include <sys\stat.h>
 
 using namespace rapidjson;
+using namespace std;
 
 int getFileLength(const char* filename){
 	struct stat st;

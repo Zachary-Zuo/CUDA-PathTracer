@@ -7,6 +7,7 @@
 
 #define TINYEXR_IMPLEMENTATION
 #include "tinyexr.h"
+#include "cutil_math.h"
 
 bool ImageIO::LoadTexture(const char* filename, int& width, int& height, bool srgb, std::vector<float4>& output){
 	int component;

@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include "cutil_math.h"
 
 class Medium;
 class Ray

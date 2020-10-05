@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-using namespace std;
+//using namespace std;
 
 enum class TransportMode { Radiance, Importance };
 

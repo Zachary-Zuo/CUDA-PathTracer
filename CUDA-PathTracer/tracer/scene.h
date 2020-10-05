@@ -9,7 +9,6 @@
 #include "bssrdf.h"
 #include "medium.h"
 #include "infinite.h"
-#include <vector>
 
 enum IntegratorType{
 	IT_AO = 0,
@@ -24,13 +23,13 @@ enum IntegratorType{
 
 class Scene{
 public:
-	vector<Primitive> primitives;
-	vector<Material> materials;
-	vector<Bssrdf> bssrdfs;
-	vector<Medium> mediums;
-	vector<Area> lights;
-	vector<Texture> textures;
-	vector<float> lightDistribution;
+	std::vector<Primitive> primitives;
+	std::vector<Material> materials;
+	std::vector<Bssrdf> bssrdfs;
+	std::vector<Medium> mediums;
+	std::vector<Area> lights;
+	std::vector<Texture> textures;
+	std::vector<float> lightDistribution;
 	Camera* camera;
 	Infinite infinite;
 	BVH bvh;
@@ -46,7 +45,7 @@ public:
 	} integrator;
 
 public:
-	void Init(Camera* cam, string file){
+	void Init(Camera* cam, std::string file){
 		camera = cam;
 
 		clock_t now = clock();

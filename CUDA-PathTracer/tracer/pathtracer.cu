@@ -1998,7 +1998,7 @@ struct VisiblePoint{
 };
 
 struct CPUGridNode{
-	vector<int> vpIdx;
+	std::vector<int> vpIdx;
 };
 
 VisiblePoint* device_vps;
@@ -2078,7 +2078,7 @@ void BuildHashTable(int width, int height){
 		}
 	}
 
-	vector<int> temp(total), off(hSize + 1); off[0] = 0;
+	std::vector<int> temp(total), off(hSize + 1); off[0] = 0;
 	int* start = &temp[0], offset = 0;
 	for (int i = 0; i < hSize; ++i){
 		memcpy(start + offset, &grid[i].vpIdx[0], grid[i].vpIdx.size()*sizeof(int));
@@ -2646,7 +2646,7 @@ void BeginRender(
 	//copy textures
 	if (scene.textures.size()){
 		HANDLE_ERROR(cudaMalloc(&texture_size, scene.textures.size() * 2 * sizeof(int)));
-		vector<int> texSize;
+		std::vector<int> texSize;
 		HANDLE_ERROR(cudaMalloc(&dev_textures, scene.textures.size()*sizeof(uchar4*)));
 		for (int i = 0; i < scene.textures.size(); ++i){
 			Texture tex = scene.textures[i];

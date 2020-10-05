@@ -6,11 +6,11 @@
 
 struct BssrdfTable{
 	const int nRhoSamples, nRadiusSamples;
-	vector<float> rhoSamples;
-	vector<float> radiusSamples;
-	vector<float> profile;
-	vector<float> rhoEff;
-	vector<float> profileCDF;
+	std::vector<float> rhoSamples;
+	std::vector<float> radiusSamples;
+	std::vector<float> profile;
+	std::vector<float> rhoEff;
+	std::vector<float> profileCDF;
 
 	BssrdfTable(int nRhoSamples, int nRadiusSamples);
 };
