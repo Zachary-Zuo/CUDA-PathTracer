@@ -13,6 +13,8 @@
 #include <random>
 
 #include "ShaderStructs.h"
+#include "tracer/scene.h"
+#include "tracer/parsescene.h"
 
 
 class Graphics
@@ -79,6 +81,7 @@ public:
     bool findCUDADevice();
     static bool dynlinkLoadD3D11API();
     bool findDXDevice(char* device_name);
+    void Graphics::InitCudaScene();
 
 private:
     DirectX::XMMATRIX projection;
@@ -101,6 +104,15 @@ private:
     cudaExternalSemaphore_t m_extSemaphore;
     cudaStream_t m_cuda_stream;
     char m_szdevice_name[256];
+
+    GlobalConfig config;
+    unsigned iteration = 0;
+    bool vision_bvh = false;
+    bool reset_acc_image = false;
+    clock_t start = 0, last = 0;
+    //float3* image, * dev_ptr;
+    Scene scene;
+    cudaGraphicsResource* resource = NULL;
 
 #ifndef NDEBUG
     DxgiInfoManager infoManager;

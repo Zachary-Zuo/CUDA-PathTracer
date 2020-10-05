@@ -9,7 +9,6 @@
 #include "imgui/imgui_impl_win32.h"
 #include "ShaderStructs.h"
 #include "sinewave_cuda.h"
-//#include "tracer\pathtracer.h"
 
 // This header inclues all the necessary D3D11 and CUDA includes
 #include <dynlink_d3d11.h>
@@ -22,6 +21,7 @@
 #include <rendercheck_d3d11.h>
 #include <helper_cuda.h>
 #include <helper_functions.h> // includes cuda.h and cuda_runtime_api.h
+#include "tracer\pathtracer.h"
 
 namespace wrl = Microsoft::WRL;
 namespace dx = DirectX;
@@ -372,7 +372,14 @@ void Graphics::BeginFrame(float red, float green, float blue) noexcept
 
     static uint64_t key = 0;
     // Launch cuda kernel to generate sinewave in vertex buffer
-    RunSineWaveKernel(m_extSemaphore, key, INFINITE, m_nWindowWidth, m_nWindowHeight, m_VertexBufPtr, m_cuda_stream);
+    //RunSineWaveKernel(m_extSemaphore, key, INFINITE, m_nWindowWidth, m_nWindowHeight, m_VertexBufPtr, m_cuda_stream);
+    iteration++;
+
+    if (reset_acc_image) {
+        iteration = 1;
+    }
+    Render(scene, 1920, 1080, scene.camera, iteration, reset_acc_image, m_VertexBufPtr,m_extSemaphore, key, INFINITE, m_cuda_stream);
+    reset_acc_image = false;
 
     // Draw the scene using them
     HRESULT hr = S_OK;
@@ -385,12 +392,13 @@ void Graphics::BeginFrame(float red, float green, float blue) noexcept
     m_pContext->Draw(m_nWindowHeight * m_nWindowWidth, 0);
     GFX_THROW_INFO(m_pKeyedMutex11->ReleaseSync(key));
 }
-/*
-* void Graphics::InitCudaScene(Scene& scene, unsigned width, unsigned height, float ep)
+
+void Graphics::InitCudaScene()
 {
-    //BeginRender(scene, config.width, config.height, config.epsilon);
+    std::string f = "E:/Project/CUDA-PathTracer/x64/Debug/scene.json";
+    InitScene(f, config, scene);
+    BeginRender(scene, 1920, 1080, 0.00100000005);
 }
-*/
 
 
 void Graphics::DrawIndexed(UINT count) noexcept(!IS_DEBUG)

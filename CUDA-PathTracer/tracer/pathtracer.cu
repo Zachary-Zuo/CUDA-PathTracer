@@ -6,6 +6,7 @@
 #include <thrust/random.h>
 #include <device_functions.h>
 #include <cuda_runtime.h>
+#include "..\ShaderStructs.h"
 
 Camera* dev_camera;
 float3* dev_image, *dev_color;
@@ -2514,7 +2515,7 @@ __global__ void InstantRadiosity(int iter, int vplIter, int maxDepth, float bias
 }
 //**************************Instant Radiosity Integrator End********
 
-__global__ void Output(int iter, float3* output, bool reset, bool filmic, IntegratorType type){
+__global__ void Output(int iter, DXVertex* output, bool reset, bool filmic, IntegratorType type){
 	unsigned x = blockIdx.x*blockDim.x + threadIdx.x;
 	unsigned y = blockIdx.y*blockDim.y + threadIdx.y;
 	unsigned pixel = x + y*blockDim.x*gridDim.x;
@@ -2528,7 +2529,9 @@ __global__ void Output(int iter, float3* output, bool reset, bool filmic, Integr
 	}
 	if (filmic) FilmicTonemapping(color);
 	else GammaCorrection(color);
-	output[pixel] = color;
+	output[pixel].color.x = color.x;
+	output[pixel].color.y = color.y;
+	output[pixel].color.z = color.z;
 }
 
 __global__ void InitRender(
@@ -2703,8 +2706,29 @@ void EndRender(){
 	HANDLE_ERROR(cudaFree(dev_color));
 }
 
-void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsigned iter, bool reset, float3* output){
+void cudaAcquireSync(cudaExternalSemaphore_t& extSemaphore, uint64_t key, unsigned int timeoutMs, cudaStream_t streamToRun)
+{
+	cudaExternalSemaphoreWaitParams extSemWaitParams;
+	memset(&extSemWaitParams, 0, sizeof(extSemWaitParams));
+	extSemWaitParams.params.keyedMutex.key = key;
+	extSemWaitParams.params.keyedMutex.timeoutMs = timeoutMs;
+
+	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&extSemaphore, &extSemWaitParams, 1, streamToRun));
+}
+
+void cudaReleaseSync(cudaExternalSemaphore_t& extSemaphore, uint64_t key, cudaStream_t streamToRun)
+{
+	cudaExternalSemaphoreSignalParams extSemSigParams;
+	memset(&extSemSigParams, 0, sizeof(extSemSigParams));
+	extSemSigParams.params.keyedMutex.key = key;
+
+	checkCudaErrors(cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemSigParams, 1, streamToRun));
+}
+
+void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsigned iter, bool reset, DXVertex* output, 
+	cudaExternalSemaphore_t& extSemaphore, uint64_t& key, unsigned int timeoutMs,cudaStream_t streamToRun){
 	HANDLE_ERROR(cudaMemcpy(dev_camera, camera, sizeof(Camera), cudaMemcpyHostToDevice));
+	cudaAcquireSync(extSemaphore, key++, timeoutMs, streamToRun);
 	int block_x = 32, block_y = 4;
 	dim3 block(block_x, block_y);
 	dim3 grid(width / block.x, height / block.y);
@@ -2748,4 +2772,6 @@ void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsig
 	grid.x = width / block.x;
 	grid.y = height / block.y;
 	Output << <grid, block >> >(iter, output, reset, camera->filmic, type);
+	cudaReleaseSync(extSemaphore, key, streamToRun);
 }
+

@@ -79,6 +79,7 @@ void cudaImportKeyedMutex(void*sharedHandle, cudaExternalSemaphore_t &extSemapho
     checkCudaErrors(cudaImportExternalSemaphore(&extSemaphore, &extSemaDesc));
 }
 
+/*
 void cudaAcquireSync(cudaExternalSemaphore_t &extSemaphore, uint64_t key, unsigned int timeoutMs, cudaStream_t streamToRun)
 {
     cudaExternalSemaphoreWaitParams extSemWaitParams;
@@ -97,8 +98,11 @@ void cudaReleaseSync(cudaExternalSemaphore_t &extSemaphore, uint64_t key, cudaSt
 
     checkCudaErrors(cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemSigParams, 1, streamToRun));
 }
+*/
 
-////////////////////////////////////////////////////////////////////////////////
+
+/*
+* ////////////////////////////////////////////////////////////////////////////////
 //! Run the Cuda part of the computation
 ////////////////////////////////////////////////////////////////////////////////
 void RunSineWaveKernel(cudaExternalSemaphore_t &extSemaphore, uint64_t &key, unsigned int timeoutMs, 
@@ -115,4 +119,6 @@ void RunSineWaveKernel(cudaExternalSemaphore_t &extSemaphore, uint64_t &key, uns
     cudaReleaseSync(extSemaphore, key, streamToRun);
     t += 0.01f;
 }
+*/
+
 
