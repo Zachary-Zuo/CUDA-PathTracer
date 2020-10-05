@@ -1,6 +1,5 @@
 #pragma once
 #include "common.h"
-#include "medium.h"
 
 class Medium;
 class Ray

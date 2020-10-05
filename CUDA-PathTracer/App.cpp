@@ -4,6 +4,8 @@
 #include "CasterLabMath.h"
 #include "GDIPlusManager.h"
 #include "imgui/imgui.h"
+#include <cstring>
+#include "tracer/parsescene.h"
 
 namespace dx = DirectX;
 
@@ -52,6 +54,11 @@ App::~App()
 
 int App::Go()
 {
+	std::string f = "E:/Project/CUDA-PathTracer/x64/Debug/scene.json";
+	if (!InitScene(f, config, scene))
+	{
+		return 1;
+	}
 	while (true)
 	{
 		// process all messages pending, but to not block for new messages

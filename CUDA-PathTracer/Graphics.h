@@ -14,6 +14,7 @@
 
 #include "ShaderStructs.h"
 
+
 class Graphics
 {
     friend class Bindable;
@@ -95,7 +96,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_pRasterState;
     Microsoft::WRL::ComPtr<ID3D11InputLayout> m_pLayout;
     IDXGIKeyedMutex* m_pKeyedMutex11;
-    Vertex* m_VertexBufPtr = NULL;
+    DXVertex* m_VertexBufPtr = NULL;
     cudaExternalMemory_t m_extMemory;
     cudaExternalSemaphore_t m_extSemaphore;
     cudaStream_t m_cuda_stream;

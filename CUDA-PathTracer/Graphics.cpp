@@ -2,7 +2,6 @@
 #include "Graphics.h"
 #include "dxerr.h"
 #include <sstream>
-
 #include <cmath>
 #include <DirectXMath.h>
 #include "GraphicsThrowMacros.h"
@@ -10,6 +9,7 @@
 #include "imgui/imgui_impl_win32.h"
 #include "ShaderStructs.h"
 #include "sinewave_cuda.h"
+//#include "tracer\pathtracer.h"
 
 // This header inclues all the necessary D3D11 and CUDA includes
 #include <dynlink_d3d11.h>
@@ -122,7 +122,7 @@ Graphics::Graphics(HWND hWnd, int width, int height)
     wrl::ComPtr<ID3DBlob> PS;
     wrl::ComPtr<ID3D11VertexShader> pVertexShader;
     wrl::ComPtr<ID3D11PixelShader> pPixelShader;
-    // Vertex shader
+    // DXVertex shader
     D3DReadFileToBlob(L"VertexShader.cso", VS.GetAddressOf());
     GFX_THROW_INFO(m_pDevice->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, pVertexShader.GetAddressOf()));
     // Let's bind it now : no other vtx shader will replace it...
@@ -136,7 +136,7 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 
     D3D11_BUFFER_DESC bufferDesc;
     bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-    bufferDesc.ByteWidth = sizeof(Vertex) * width * height;
+    bufferDesc.ByteWidth = sizeof(DXVertex) * width * height;
     bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bufferDesc.CPUAccessFlags = 0;
     bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
@@ -163,7 +163,7 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 
     GFX_THROW_INFO(pResource->GetSharedHandle(&sharedHandle));
 
-    // Import the D3D11 Vertex Buffer into CUDA
+    // Import the D3D11 DXVertex Buffer into CUDA
     m_VertexBufPtr = cudaImportVertexBuffer(sharedHandle, m_extMemory, width, height);
     pResource->Release();
 
@@ -379,12 +379,19 @@ void Graphics::BeginFrame(float red, float green, float blue) noexcept
 
     GFX_THROW_INFO(m_pKeyedMutex11->AcquireSync(key++, INFINITE));
 
-    UINT stride = sizeof(Vertex);
+    UINT stride = sizeof(DXVertex);
     UINT offset = 0;
     m_pContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
     m_pContext->Draw(m_nWindowHeight * m_nWindowWidth, 0);
     GFX_THROW_INFO(m_pKeyedMutex11->ReleaseSync(key));
 }
+/*
+* void Graphics::InitCudaScene(Scene& scene, unsigned width, unsigned height, float ep)
+{
+    //BeginRender(scene, config.width, config.height, config.epsilon);
+}
+*/
+
 
 void Graphics::DrawIndexed(UINT count) noexcept(!IS_DEBUG)
 {

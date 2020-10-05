@@ -18,10 +18,10 @@
 
 using namespace DirectX;
 
-struct Vertex
+struct DXVertex
 {
 	XMFLOAT3 position;
 	XMFLOAT4 color;
 };
 
-void RunSineWaveKernel(size_t mesh_width, size_t mesh_height, Vertex *cudaDevVertptr, cudaStream_t streamToRun, float AnimTime);
+void RunSineWaveKernel(size_t mesh_width, size_t mesh_height, DXVertex*cudaDevVertptr, cudaStream_t streamToRun, float AnimTime);
