@@ -9,7 +9,7 @@ struct BVHNode{
 	BVHNode* right;  
 	BBox bbox;
 	bool is_leaf;
-	vector<Primitive> primitives;
+	std::vector<Primitive> primitives;
 
 	BVHNode(){
 		left = right = NULL;
@@ -32,17 +32,17 @@ class BVH{
 public:
 	LinearBVHNode* linear_root;
 	int total_nodes;
-	vector<Primitive> prims;
+	std::vector<Primitive> prims;
 	BBox root_box;
 
 public:
 	BVH();
 
-	void LoadOrBuildBVH(vector<Primitive>& primitives, string file);
+	void LoadOrBuildBVH(std::vector<Primitive>& primitives, std::string file);
 
 private:
-	void build(vector<Primitive>& primitives);
-	BVHNode* split(vector<Primitive>& primitives, BBox& bbox);
+	void build(std::vector<Primitive>& primitives);
+	BVHNode* split(std::vector<Primitive>& primitives, BBox& bbox);
 	void flatten(BVHNode* node, int cur, int& next);
 	void clearBVHNode(BVHNode* node);
 };

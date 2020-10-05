@@ -10,6 +10,7 @@
 #include "wrap.h"
 #include "intersection.h"
 
+
 struct Vertex{
 	float3 v;
 	float3 n;
@@ -108,17 +109,17 @@ public:
 class Scene;
 class Mesh{
 public:
-	vector<Vertex> vertices;
-	vector<Triangle> triangles;
+	std::vector<Vertex> vertices;
+	std::vector<Triangle> triangles;
 	int matIdx;
 	int bssrdfIdx;
 
 public:
-	void LoadObjFromFile(std::string filename, unsigned int flags, mat4& trs);
+	void LoadObjFromFile(std::string filename, unsigned int flags, glm::mat4& trs);
 
 private:
-	void processNode(aiNode* node, const aiScene* scene, mat4& trs);
-	void processMesh(aiMesh* aimesh, const aiScene* scene, mat4& trs);
+	void processNode(aiNode* node, const aiScene* scene, glm::mat4& trs);
+	void processMesh(aiMesh* aimesh, const aiScene* scene, glm::mat4& trs);
 	float3 genTangent(int idx1, int idx2, int idx3);
 };
 

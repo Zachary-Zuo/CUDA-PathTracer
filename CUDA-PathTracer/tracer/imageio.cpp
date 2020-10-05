@@ -8,7 +8,7 @@
 #define TINYEXR_IMPLEMENTATION
 #include "tinyexr.h"
 
-bool ImageIO::LoadTexture(const char* filename, int& width, int& height, bool srgb, vector<float4>& output){
+bool ImageIO::LoadTexture(const char* filename, int& width, int& height, bool srgb, std::vector<float4>& output){
 	int component;
 	stbi_set_flip_vertically_on_load(true);
 	unsigned char* tex = stbi_load(filename, &width, &height, &component, 0);
@@ -77,7 +77,7 @@ bool ImageIO::SavePng(const char* filename, int width, int height, float3* input
 	return true;
 }
 
-bool ImageIO::LoadExr(const char* filename, int& width, int& height, vector<float3>& output){
+bool ImageIO::LoadExr(const char* filename, int& width, int& height, std::vector<float3>& output){
 	const char* err = NULL; // or nullptr in C++11
 
 	float* out;
@@ -101,7 +101,7 @@ bool ImageIO::LoadExr(const char* filename, int& width, int& height, vector<floa
 	return true;
 }
 
-bool ImageIO::SaveExr(const char* filename, int width, int height, vector<float3>& input){
+bool ImageIO::SaveExr(const char* filename, int width, int height, std::vector<float3>& input){
 	EXRHeader header;
 	InitEXRHeader(&header);
 

@@ -1,7 +1,7 @@
 #include "mesh.h"
 #include "scene.h"
 
-void Mesh::LoadObjFromFile(std::string filename, unsigned int flags, mat4& trs){
+void Mesh::LoadObjFromFile(std::string filename, unsigned int flags, glm::mat4& trs){
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(filename, flags);
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode){
@@ -15,7 +15,7 @@ void Mesh::LoadObjFromFile(std::string filename, unsigned int flags, mat4& trs){
 }
 
 
-void Mesh::processNode(aiNode* node, const aiScene* scene, mat4& trs){
+void Mesh::processNode(aiNode* node, const aiScene* scene, glm::mat4& trs){
 	for (int i = 0; i < node->mNumMeshes; ++i){
 		aiMesh* aimesh = scene->mMeshes[node->mMeshes[i]];
 		processMesh(aimesh, scene, trs);
@@ -26,7 +26,7 @@ void Mesh::processNode(aiNode* node, const aiScene* scene, mat4& trs){
 	}
 }
 
-void Mesh::processMesh(aiMesh* aimesh, const aiScene* scene, mat4& trs){
+void Mesh::processMesh(aiMesh* aimesh, const aiScene* scene, glm::mat4& trs){
 	for (int i = 0; i < aimesh->mNumVertices; ++i){
 		Vertex vertex;
 		vertex.v.x = aimesh->mVertices[i].x;
@@ -46,14 +46,14 @@ void Mesh::processMesh(aiMesh* aimesh, const aiScene* scene, mat4& trs){
 		vertices.push_back(vertex);
 	}
 
-	mat4 invT = transpose(inverse(trs));
+	glm::mat4 invT = transpose(inverse(trs));
 	for (int i = 0; i < vertices.size(); ++i){
-		vec3 v = Float3ToVec(vertices[i].v);
-		vec3 n = Float3ToVec(vertices[i].n);
+		glm::vec3 v = Float3ToVec(vertices[i].v);
+		glm::vec3 n = Float3ToVec(vertices[i].n);
 
-		v = vec3(trs*vec4(v, 1));
+		v = glm::vec3(trs*glm::vec4(v, 1));
 
-		n = normalize(vec3(invT*vec4(n, 0)));
+		n = normalize(glm::vec3(invT*glm::vec4(n, 0)));
 		vertices[i].v = VecToFloat3(v);
 		vertices[i].n = VecToFloat3(n);
 		vertices[i].t = make_float3(0, 0, 0);

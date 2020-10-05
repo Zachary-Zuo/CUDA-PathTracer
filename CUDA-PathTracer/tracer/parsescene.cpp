@@ -17,7 +17,7 @@ int getFileLength(const char* filename){
 	return st.st_size;   //文件长度.
 }
 
-mat4 getMat4(Value& value){
+glm::mat4 getMat4(Value& value){
 	float x[16];
 	int i = 0;
 	Value::ConstValueIterator it = value.Begin();
@@ -25,7 +25,7 @@ mat4 getMat4(Value& value){
 		x[i] = it->GetDouble();
 	}
 
-	mat4 ret;
+	glm::mat4 ret;
 	memcpy(&ret[0], x, 16 * sizeof(float));
 	return ret;
 }
@@ -344,12 +344,12 @@ bool LoadScene(const char* filename, GlobalConfig& config, Scene& scene){
 					string mediumOutside = unit.HasMember("outside") ? unit["outside"].GetString() : "";
 					int mi = getMedium(mediumInside);
 					int mo = getMedium(mediumOutside);
-					mat4 trs, t, r, s;
-					s = glm::scale(s, vec3(scale.x, scale.y, scale.z));
-					t = glm::translate(t, vec3(translate.x, translate.y, translate.z));
-					r = glm::rotate(r, radians(rotate.x), vec3(1, 0, 0));
-					r = glm::rotate(r, radians(rotate.y), vec3(0, 1, 0));
-					r = glm::rotate(r, radians(rotate.z), vec3(0, 0, 1));
+					glm::mat4 trs, t, r, s;
+					s = glm::scale(s, glm::vec3(scale.x, scale.y, scale.z));
+					t = glm::translate(t, glm::vec3(translate.x, translate.y, translate.z));
+					r = glm::rotate(r, glm::radians(rotate.x), glm::vec3(1, 0, 0));
+					r = glm::rotate(r, glm::radians(rotate.y), glm::vec3(0, 1, 0));
+					r = glm::rotate(r, glm::radians(rotate.z), glm::vec3(0, 0, 1));
 					trs = t*r*s;
 					Mesh mesh;
 					mesh.matIdx = -1;
@@ -397,19 +397,19 @@ bool LoadScene(const char* filename, GlobalConfig& config, Scene& scene){
 					float3 scale = unit.HasMember("scale") ? getFloat3(unit["scale"]) : make_float3(1, 1, 1);
 					float3 translate = unit.HasMember("translate") ? getFloat3(unit["translate"]) : make_float3(0, 0, 0);
 					float3 rotate = unit.HasMember("rotate") ? getFloat3(unit["rotate"]) : make_float3(0, 0, 0);
-					mat4 trs, t, r, s;
-					s = glm::scale(s, vec3(scale.x, scale.y, scale.z));
-					t = glm::translate(t, vec3(translate.x, translate.y, translate.z));
-					r = glm::rotate(r, radians(rotate.x), vec3(1, 0, 0));
-					r = glm::rotate(r, radians(rotate.y), vec3(0, 1, 0));
-					r = glm::rotate(r, radians(rotate.z), vec3(0, 0, 1));
+					glm::mat4 trs, t, r, s;
+					s = glm::scale(s, glm::vec3(scale.x, scale.y, scale.z));
+					t = glm::translate(t, glm::vec3(translate.x, translate.y, translate.z));
+					r = glm::rotate(r, glm::radians(rotate.x), glm::vec3(1, 0, 0));
+					r = glm::rotate(r, glm::radians(rotate.y), glm::vec3(0, 1, 0));
+					r = glm::rotate(r, glm::radians(rotate.z), glm::vec3(0, 0, 1));
 					trs = t*r*s;
 
-					vec3 v0 = Float3ToVec(p0);
-					v0 = vec3(trs*vec4(v0, 1));
+					glm::vec3 v0 = Float3ToVec(p0);
+					v0 = glm::vec3(trs*glm::vec4(v0, 1));
 					p0 = VecToFloat3(v0);
-					vec3 v1 = Float3ToVec(p1);
-					v1 = vec3(trs*vec4(v1, 1));
+					glm::vec3 v1 = Float3ToVec(p1);
+					v1 = glm::vec3(trs*glm::vec4(v1, 1));
 					p1 = VecToFloat3(v1);
 
 					Line line;
@@ -503,12 +503,12 @@ bool LoadScene(const char* filename, GlobalConfig& config, Scene& scene){
 					float3 scale = unit.HasMember("scale") ? getFloat3(unit["scale"]) : make_float3(1, 1, 1);
 					float3 translate = unit.HasMember("translate") ? getFloat3(unit["translate"]) : make_float3(0, 0, 0);
 					float3 rotate = unit.HasMember("rotate") ? getFloat3(unit["rotate"]) : make_float3(0, 0, 0);
-					mat4 trs, t, r, s;
-					s = glm::scale(s, vec3(scale.x, scale.y, scale.z));
-					t = glm::translate(t, vec3(translate.x, translate.y, translate.z));
-					r = glm::rotate(r, radians(rotate.x), vec3(1, 0, 0));
-					r = glm::rotate(r, radians(rotate.y), vec3(0, 1, 0));
-					r = glm::rotate(r, radians(rotate.z), vec3(0, 0, 1));
+					glm::mat4 trs, t, r, s;
+					s = glm::scale(s, glm::vec3(scale.x, scale.y, scale.z));
+					t = glm::translate(t, glm::vec3(translate.x, translate.y, translate.z));
+					r = glm::rotate(r, glm::radians(rotate.x), glm::vec3(1, 0, 0));
+					r = glm::rotate(r, glm::radians(rotate.y), glm::vec3(0, 1, 0));
+					r = glm::rotate(r, glm::radians(rotate.z), glm::vec3(0, 0, 1));
 					trs = t*r*s;
 					Mesh mesh;
 					mesh.bssrdfIdx = -1;
@@ -547,23 +547,23 @@ bool LoadScene(const char* filename, GlobalConfig& config, Scene& scene){
 						fprintf(stderr, "Couldn't load hdr file \"%s\", only support .exr format\n", file.c_str());
 						exit(1);
 					}
-					vec3 uu, vv, ww;
+					glm::vec3 uu, vv, ww;
 					if (unit.HasMember("rotate")){
 						float3 r = getFloat3(unit["rotate"]);
-						mat4 rs;
-						rs = rotate(rs, radians(r.x), vec3(1, 0, 0));
-						rs = rotate(rs, radians(r.y), vec3(0, 1, 0));
-						rs = rotate(rs, radians(r.z), vec3(0, 0, 1));
-						uu = vec3(rs * vec4(1, 0, 0, 0));
-						vv = vec3(rs * vec4(0, 1, 0, 0));
-						ww = vec3(rs * vec4(0, 0, 1, 0));
+						glm::mat4 rs;
+						rs = rotate(rs, glm::radians(r.x), glm::vec3(1, 0, 0));
+						rs = rotate(rs, glm::radians(r.y), glm::vec3(0, 1, 0));
+						rs = rotate(rs, glm::radians(r.z), glm::vec3(0, 0, 1));
+						uu = glm::vec3(rs * glm::vec4(1, 0, 0, 0));
+						vv = glm::vec3(rs * glm::vec4(0, 1, 0, 0));
+						ww = glm::vec3(rs * glm::vec4(0, 0, 1, 0));
 					}
 					if (unit.HasMember("matrix")){
-						mat4 rs = getMat4(unit["matrix"]);
+						glm::mat4 rs = getMat4(unit["matrix"]);
 						rs = inverse(rs);
-						uu = vec3(rs * vec4(1, 0, 0, 0));
-						vv = vec3(rs * vec4(0, 1, 0, 0));
-						ww = vec3(rs * vec4(0, 0, 1, 0));
+						uu = glm::vec3(rs * glm::vec4(1, 0, 0, 0));
+						vv = glm::vec3(rs * glm::vec4(0, 1, 0, 0));
+						ww = glm::vec3(rs * glm::vec4(0, 0, 1, 0));
 					}
 					Infinite infinite;
 					infinite.u = VecToFloat3(uu);

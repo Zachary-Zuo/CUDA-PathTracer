@@ -5,7 +5,7 @@ BVH::BVH(){
 	total_nodes = 0;
 }
 
-void BVH::build(vector<Primitive>& primitives){
+void BVH::build(std::vector<Primitive>& primitives){
 	if (primitives.size() == 0)
 		return;
 
@@ -32,7 +32,7 @@ void BVH::build(vector<Primitive>& primitives){
 	clearBVHNode(root);
 }
 
-BVHNode* BVH::split(vector<Primitive>& primitives, BBox& bbox){
+BVHNode* BVH::split(std::vector<Primitive>& primitives, BBox& bbox){
 	++total_nodes;
 
 	//detect if the bbox degenerate
@@ -193,9 +193,9 @@ void BVH::clearBVHNode(BVHNode* node){
 	delete node;
 }
 
-void BVH::LoadOrBuildBVH(vector<Primitive>& primitives, string file){
-	string base = file.substr(0, file.find_last_of('/') + 1);
-	string bvhfile = base + "bvh.cache";
+void BVH::LoadOrBuildBVH(std::vector<Primitive>& primitives, std::string file){
+	std::string base = file.substr(0, file.find_last_of('/') + 1);
+	std::string bvhfile = base + "bvh.cache";
 	FILE* fp = nullptr;
 	fp = fopen(bvhfile.c_str(), "rb");
 	if (fp){

@@ -14,8 +14,8 @@
 #include <glm\glm.hpp>
 #include <glm\gtc\matrix_transform.hpp>
 
-using namespace std;
-using namespace glm;
+//using namespace std;
+//using namespace glm;
 
 #define PI                  3.14159265358f
 #define TWOPI               6.28318530716f
@@ -100,10 +100,10 @@ __host__ __device__ inline T Max(T c0, T c1) {
 	return (c0 > c1 ? c0 : c1);
 }
 
-inline float3 VecToFloat3(vec3& v) {
+inline float3 VecToFloat3(glm::vec3& v) {
 	return make_float3(v.x, v.y, v.z);
 }
 
-inline vec3 Float3ToVec(float3& v) {
-	return vec3(v.x, v.y, v.z);
+inline glm::vec3 Float3ToVec(float3& v) {
+	return glm::vec3(v.x, v.y, v.z);
 }
