@@ -12,7 +12,6 @@
 #include <memory>
 #include <random>
 
-#include "ShaderStructs.h"
 #include "tracer/scene.h"
 #include "tracer/parsescene.h"
 
@@ -94,16 +93,7 @@ private:
     Microsoft::WRL::ComPtr<IDXGISwapChain> m_pSwap;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_pContext;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_pTarget;
-    Microsoft::WRL::ComPtr<IDXGIAdapter1> m_pCudaCapableAdapter;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_pVertexBuffer;
-    Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_pRasterState;
-    Microsoft::WRL::ComPtr<ID3D11InputLayout> m_pLayout;
-    IDXGIKeyedMutex* m_pKeyedMutex11;
-    DXVertex* m_VertexBufPtr = NULL;
-    cudaExternalMemory_t m_extMemory;
-    cudaExternalSemaphore_t m_extSemaphore;
-    cudaStream_t m_cuda_stream;
-    char m_szdevice_name[256];
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_pDSV;
 
     GlobalConfig config;
     unsigned iteration = 0;

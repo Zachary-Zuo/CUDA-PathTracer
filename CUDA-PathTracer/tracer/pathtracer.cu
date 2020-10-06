@@ -6,7 +6,6 @@
 #include <thrust/random.h>
 #include <device_functions.h>
 #include <cuda_runtime.h>
-#include "..\ShaderStructs.h"
 
 Camera* dev_camera;
 float3* dev_image, *dev_color;
@@ -2515,44 +2514,10 @@ __global__ void InstantRadiosity(int iter, int vplIter, int maxDepth, float bias
 }
 //**************************Instant Radiosity Integrator End********
 
-__global__ void gen_kernel(DXVertex* vertices, unsigned int width, unsigned int height, float time)
-{
-	unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
-	unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-	// calculate uv coordinates
-	float u = x / (float)width;
-	float v = y / (float)height;
-	u = u * 2.0f - 1.0f;
-	v = v * 2.0f - 1.0f;
-
-	// calculate simple sine wave pattern
-	float freq = 4.0f;
-	float w = sinf(u * freq + time) * cosf(v * freq + time) * 0.5f;
-
-	if (y < height && x < width)
-	{
-		// write output vertex
-		vertices[y * width + x].position.x = u;
-		vertices[y * width + x].position.y = v;
-		vertices[y * width + x].position.z = 1.0f;
-		vertices[y * width + x].color.x = 0.6f;
-		vertices[y * width + x].color.y = 0.7f;
-		vertices[y * width + x].color.z = 0.0f;
-		vertices[y * width + x].color.w = 0.0f;
-	}
-}
-
-
 __global__ void Output(int iter, float3* output, bool reset, bool filmic, IntegratorType type){
 	unsigned x = blockIdx.x*blockDim.x + threadIdx.x;
 	unsigned y = blockIdx.y*blockDim.y + threadIdx.y;
 	unsigned pixel = x + y * blockDim.x * gridDim.x;
-
-	float u = x / (float)(blockDim.x * gridDim.x);
-	float v = y / 1080.0;
-	u = u * 2.0f - 1.0f;
-	v = v * 2.0f - 1.0f;
 
 	if (reset) kernel_acc_image[pixel] = { 0, 0, 0 };
 
@@ -2564,13 +2529,6 @@ __global__ void Output(int iter, float3* output, bool reset, bool filmic, Integr
 	if (filmic) FilmicTonemapping(color);
 	else GammaCorrection(color);
 	output[pixel] = color;
-	//output[pixel].position.x = u;
-	//output[pixel].position.y = v;
-	//output[pixel].position.z = 0.5f;
-	//output[pixel].color.x = 0.6f;
-	//output[pixel].color.y = 0.7f;
-	//output[pixel].color.z = 0.0f;
-	//output[pixel].color.w = 0.5f;
 }
 
 __global__ void InitRender(
@@ -2745,80 +2703,50 @@ void EndRender(){
 	HANDLE_ERROR(cudaFree(dev_color));
 }
 
-/*
-void cudaAcquireSync(cudaExternalSemaphore_t& extSemaphore, uint64_t key, unsigned int timeoutMs, cudaStream_t streamToRun)
-{
-	cudaExternalSemaphoreWaitParams extSemWaitParams;
-	memset(&extSemWaitParams, 0, sizeof(extSemWaitParams));
-	extSemWaitParams.params.keyedMutex.key = key;
-	extSemWaitParams.params.keyedMutex.timeoutMs = timeoutMs;
-
-	checkCudaErrors(cudaWaitExternalSemaphoresAsync(&extSemaphore, &extSemWaitParams, 1, streamToRun));
-}
-
-void cudaReleaseSync(cudaExternalSemaphore_t& extSemaphore, uint64_t key, cudaStream_t streamToRun)
-{
-	cudaExternalSemaphoreSignalParams extSemSigParams;
-	memset(&extSemSigParams, 0, sizeof(extSemSigParams));
-	extSemSigParams.params.keyedMutex.key = key;
-
-	checkCudaErrors(cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemSigParams, 1, streamToRun));
-}
-*/
-
-void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsigned iter, bool reset, float3* cudaDevVertptr,
-	cudaExternalSemaphore_t& extSemaphore, uint64_t& key, unsigned int timeoutMs,cudaStream_t streamToRun){
+void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsigned iter, bool reset, float3* output) {
 	HANDLE_ERROR(cudaMemcpy(dev_camera, camera, sizeof(Camera), cudaMemcpyHostToDevice));
-	//cudaAcquireSync(extSemaphore, key++, timeoutMs, streamToRun);
 	int block_x = 32, block_y = 4;
 	dim3 block(block_x, block_y);
 	dim3 grid(width / block.x, height / block.y);
 
 	IntegratorType type = scene.integrator.type;
 	if (type == IT_AO)
-		Ao << <grid, block >> >(iter, scene.integrator.maxDist);
+		Ao << <grid, block >> > (iter, scene.integrator.maxDist);
 	else if (type == IT_PT)
-		Path << <grid, block >> >(iter, scene.integrator.maxDepth);
+		Path << <grid, block >> > (iter, scene.integrator.maxDepth);
 	else if (type == IT_VPT)
-		Volpath << <grid, block >> >(iter, scene.integrator.maxDepth);
-	else if (type == IT_LT){
-		LightTracingInit << <grid, block >> >();
-		LightTracing << <grid, block >> >(iter, scene.integrator.maxDepth);
+		Volpath << <grid, block >> > (iter, scene.integrator.maxDepth);
+	else if (type == IT_LT) {
+		LightTracingInit << <grid, block >> > ();
+		LightTracing << <grid, block >> > (iter, scene.integrator.maxDepth);
 	}
-	else if (type == IT_BDPT){
-		BdptInit << <grid, block >> >();
-		Bdpt << <grid, block >> >(iter, scene.integrator.maxDepth);
+	else if (type == IT_BDPT) {
+		BdptInit << <grid, block >> > ();
+		Bdpt << <grid, block >> > (iter, scene.integrator.maxDepth);
 	}
-	else if (type == IT_SPPM){
-		StochasticProgressivePhotonmapperFP << <grid, block >> >(iter, scene.integrator.maxDepth,
+	else if (type == IT_SPPM) {
+		StochasticProgressivePhotonmapperFP << <grid, block >> > (iter, scene.integrator.maxDepth,
 			scene.integrator.initRadius);
 
 		//build hash grid on cpu
 		StochasticProgressivePhotonmapperBuildHashTable(width, height);
 
 		int photonsPerIteration = scene.integrator.photonsPerIteration;
-		StochasticProgressivePhotonmapperSP << < photonsPerIteration / 10, 10 >> >(iter, scene.integrator.maxDepth);
-		
-		StochasticProgressivePhotonmapperTP << <grid, block >> >(iter, photonsPerIteration);
+		StochasticProgressivePhotonmapperSP << < photonsPerIteration / 10, 10 >> > (iter, scene.integrator.maxDepth);
+
+		StochasticProgressivePhotonmapperTP << <grid, block >> > (iter, photonsPerIteration);
 	}
-	else if (type == IT_IR){
-		if (vplIter == IR_MAX_VPLS){
+	else if (type == IT_IR) {
+		if (vplIter == IR_MAX_VPLS) {
 			vplIter = 0;
-			GenerateVpl << <IR_MAX_VPLS, 1 >> >(iter, scene.integrator.maxDepth);
+			GenerateVpl << <IR_MAX_VPLS, 1 >> > (iter, scene.integrator.maxDepth);
 		}
-		InstantRadiosity << <grid, block >> >(iter, vplIter, scene.integrator.maxDepth, scene.integrator.vplBias);
+		InstantRadiosity << <grid, block >> > (iter, vplIter, scene.integrator.maxDepth, scene.integrator.vplBias);
 		vplIter++;
 	}
 
 	grid.x = width / block.x;
 	grid.y = height / block.y;
-	//Output <<<grid, block,0, streamToRun >>>(iter, cudaDevVertptr, false, camera->filmic, type);
-	//cudaReleaseSync(extSemaphore, key, streamToRun);
-	//block.x = 16;
-	//block.y = 16;
-	//grid.x = 1920 / 16;
-	//grid.y = 1080 / 16;
-	Output << <grid, block, 0, streamToRun >> > (iter, cudaDevVertptr, false, camera->filmic, type);
-	//gen_kernel << < grid, block, 0, streamToRun >> > (cudaDevVertptr, 1920, 1080, 0);
+	Output << <grid, block >> > (iter, output, reset, camera->filmic, type);
 }
 
