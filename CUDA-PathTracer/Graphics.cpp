@@ -375,12 +375,19 @@ void Graphics::BeginFrame(float red, float green, float blue) noexcept
     //RunSineWaveKernel(m_extSemaphore, key, INFINITE, m_nWindowWidth, m_nWindowHeight, m_VertexBufPtr, m_cuda_stream);
     iteration++;
 
-    if (reset_acc_image) {
-        iteration = 1;
-    }
-    Render(scene, 1920, 1080, scene.camera, iteration, reset_acc_image, m_VertexBufPtr,m_extSemaphore, key, INFINITE, m_cuda_stream);
     reset_acc_image = false;
-
+    //Render(scene, 1920, 1080, scene.camera, iteration, false, m_VertexBufPtr,m_extSemaphore, key, INFINITE, m_cuda_stream);
+    float3* image, * dev_ptr;
+    cudaMalloc(&dev_ptr, 1920 * 1080 * sizeof(float3));
+    image = new float3[1920 * 1080];
+    Render(scene, 1920, 1080, scene.camera, iteration, false, dev_ptr, m_extSemaphore, key, INFINITE, m_cuda_stream);
+    cudaMemcpy(image, dev_ptr, 1920 * 1080 * sizeof(float3), cudaMemcpyDeviceToHost);
+    char buffer[2048] = { 0 };
+    sprintf(buffer, "E:/Project/CUDA-PathTracer/result/%ds iteration %dpx-%dpx.png", iteration, 1920, 1080);
+    ImageIO::SavePng(buffer, config.width, config.height, &image[0]);
+    cudaFree(dev_ptr);
+    delete[]image;
+    
     // Draw the scene using them
     HRESULT hr = S_OK;
 

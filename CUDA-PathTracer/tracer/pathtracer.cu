@@ -2515,10 +2515,44 @@ __global__ void InstantRadiosity(int iter, int vplIter, int maxDepth, float bias
 }
 //**************************Instant Radiosity Integrator End********
 
-__global__ void Output(int iter, DXVertex* output, bool reset, bool filmic, IntegratorType type){
+__global__ void gen_kernel(DXVertex* vertices, unsigned int width, unsigned int height, float time)
+{
+	unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
+	unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+	// calculate uv coordinates
+	float u = x / (float)width;
+	float v = y / (float)height;
+	u = u * 2.0f - 1.0f;
+	v = v * 2.0f - 1.0f;
+
+	// calculate simple sine wave pattern
+	float freq = 4.0f;
+	float w = sinf(u * freq + time) * cosf(v * freq + time) * 0.5f;
+
+	if (y < height && x < width)
+	{
+		// write output vertex
+		vertices[y * width + x].position.x = u;
+		vertices[y * width + x].position.y = v;
+		vertices[y * width + x].position.z = 1.0f;
+		vertices[y * width + x].color.x = 0.6f;
+		vertices[y * width + x].color.y = 0.7f;
+		vertices[y * width + x].color.z = 0.0f;
+		vertices[y * width + x].color.w = 0.0f;
+	}
+}
+
+
+__global__ void Output(int iter, float3* output, bool reset, bool filmic, IntegratorType type){
 	unsigned x = blockIdx.x*blockDim.x + threadIdx.x;
 	unsigned y = blockIdx.y*blockDim.y + threadIdx.y;
-	unsigned pixel = x + y*blockDim.x*gridDim.x;
+	unsigned pixel = x + y * blockDim.x * gridDim.x;
+
+	float u = x / (float)(blockDim.x * gridDim.x);
+	float v = y / 1080.0;
+	u = u * 2.0f - 1.0f;
+	v = v * 2.0f - 1.0f;
 
 	if (reset) kernel_acc_image[pixel] = { 0, 0, 0 };
 
@@ -2529,9 +2563,14 @@ __global__ void Output(int iter, DXVertex* output, bool reset, bool filmic, Inte
 	}
 	if (filmic) FilmicTonemapping(color);
 	else GammaCorrection(color);
-	output[pixel].color.x = color.x;
-	output[pixel].color.y = color.y;
-	output[pixel].color.z = color.z;
+	output[pixel] = color;
+	//output[pixel].position.x = u;
+	//output[pixel].position.y = v;
+	//output[pixel].position.z = 0.5f;
+	//output[pixel].color.x = 0.6f;
+	//output[pixel].color.y = 0.7f;
+	//output[pixel].color.z = 0.0f;
+	//output[pixel].color.w = 0.5f;
 }
 
 __global__ void InitRender(
@@ -2706,6 +2745,7 @@ void EndRender(){
 	HANDLE_ERROR(cudaFree(dev_color));
 }
 
+/*
 void cudaAcquireSync(cudaExternalSemaphore_t& extSemaphore, uint64_t key, unsigned int timeoutMs, cudaStream_t streamToRun)
 {
 	cudaExternalSemaphoreWaitParams extSemWaitParams;
@@ -2724,11 +2764,12 @@ void cudaReleaseSync(cudaExternalSemaphore_t& extSemaphore, uint64_t key, cudaSt
 
 	checkCudaErrors(cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemSigParams, 1, streamToRun));
 }
+*/
 
-void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsigned iter, bool reset, DXVertex* output, 
+void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsigned iter, bool reset, float3* cudaDevVertptr,
 	cudaExternalSemaphore_t& extSemaphore, uint64_t& key, unsigned int timeoutMs,cudaStream_t streamToRun){
 	HANDLE_ERROR(cudaMemcpy(dev_camera, camera, sizeof(Camera), cudaMemcpyHostToDevice));
-	cudaAcquireSync(extSemaphore, key++, timeoutMs, streamToRun);
+	//cudaAcquireSync(extSemaphore, key++, timeoutMs, streamToRun);
 	int block_x = 32, block_y = 4;
 	dim3 block(block_x, block_y);
 	dim3 grid(width / block.x, height / block.y);
@@ -2771,7 +2812,13 @@ void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsig
 
 	grid.x = width / block.x;
 	grid.y = height / block.y;
-	Output << <grid, block >> >(iter, output, reset, camera->filmic, type);
-	cudaReleaseSync(extSemaphore, key, streamToRun);
+	//Output <<<grid, block,0, streamToRun >>>(iter, cudaDevVertptr, false, camera->filmic, type);
+	//cudaReleaseSync(extSemaphore, key, streamToRun);
+	//block.x = 16;
+	//block.y = 16;
+	//grid.x = 1920 / 16;
+	//grid.y = 1080 / 16;
+	Output << <grid, block, 0, streamToRun >> > (iter, cudaDevVertptr, false, camera->filmic, type);
+	//gen_kernel << < grid, block, 0, streamToRun >> > (cudaDevVertptr, 1920, 1080, 0);
 }
 
