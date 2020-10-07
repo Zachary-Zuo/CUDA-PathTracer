@@ -1,12 +1,12 @@
 #pragma warning(disable : 4312)
 #include "Graphics.h"
-#include "dxerr.h"
+#include "Dxerr/dxerr.h"
 #include <sstream>
 #include <cmath>
 #include <DirectXMath.h>
 #include "GraphicsThrowMacros.h"
-#include "imgui/imgui_impl_dx11.h"
-#include "imgui/imgui_impl_win32.h"
+#include "../imgui/imgui_impl_dx11.h"
+#include "../imgui/imgui_impl_win32.h"
 
 // This header inclues all the necessary D3D11 and CUDA includes
 #include <dynlink_d3d11.h>
@@ -19,7 +19,7 @@
 #include <rendercheck_d3d11.h>
 #include <helper_cuda.h>
 #include <helper_functions.h> // includes cuda.h and cuda_runtime_api.h
-#include "tracer\pathtracer.h"
+#include "../tracer/pathtracer.h"
 
 namespace wrl = Microsoft::WRL;
 namespace dx = DirectX;

@@ -1,7 +1,7 @@
 #include "Window.h"
 #include <sstream>
 #include "WindowsThrowMacros.h"
-#include "imgui/imgui_impl_win32.h"
+#include "../imgui/imgui_impl_win32.h"
 
 
 // Window Class Stuff

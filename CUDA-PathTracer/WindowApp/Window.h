@@ -1,7 +1,7 @@
 #pragma once
 #include "CasterLabWin.h"
 #include "WindowException.h"
-#include "imgui/imgui_impl_win32.h"
+#include "../imgui/imgui_impl_win32.h"
 #include "IO/Keyboard.h"
 #include "IO/Mouse.h"
 #include "Graphics.h"

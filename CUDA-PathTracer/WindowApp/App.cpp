@@ -1,11 +1,11 @@
 #include "App.h"
 #include <memory>
 #include <algorithm>
-#include "CasterLabMath.h"
+#include "../CasterLabMath.h"
 #include "GDIPlusManager.h"
-#include "imgui/imgui.h"
+#include "../imgui/imgui.h"
 #include <cstring>
-#include "tracer/parsescene.h"
+#include "../tracer/parsescene.h"
 
 namespace dx = DirectX;
 

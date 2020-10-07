@@ -9,7 +9,7 @@
 //  [X] Platform: Multi-viewport support (multiple windows). Enable with 'io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable'.
 
 #pragma once
-#include "../CasterLabWin.h"
+#include "../WindowApp/CasterLabWin.h"
 #include "imgui.h"      // IMGUI_IMPL_API
 
 IMGUI_IMPL_API bool     ImGui_ImplWin32_Init(HWND hwnd);

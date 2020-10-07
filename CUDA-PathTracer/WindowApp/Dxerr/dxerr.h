@@ -12,7 +12,7 @@
 //--------------------------------------------------------------------------------------
 
 #pragma once
-#include "CasterLabWin.h"
+#include "../CasterLabWin.h"
 #include <sal.h>
 
 #ifdef __cplusplus

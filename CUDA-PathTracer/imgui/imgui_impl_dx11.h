@@ -11,8 +11,8 @@
 // https://github.com/ocornut/imgui
 
 #pragma once
-#include "../CasterLabWin.h"
-#include "../Graphics.h"
+#include "../WindowApp/CasterLabWin.h"
+#include "../WindowApp/Graphics.h"
 #include "imgui.h"      // IMGUI_IMPL_API
 
 struct ID3D11Device;

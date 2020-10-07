@@ -12,8 +12,8 @@
 #include <memory>
 #include <random>
 
-#include "tracer/scene.h"
-#include "tracer/parsescene.h"
+#include "../tracer/scene.h"
+#include "../tracer/parsescene.h"
 
 
 class Graphics
