@@ -361,3 +361,4 @@ imgui.ini
 CUDA-PathTracer/CUDA-PathTracer.vcxproj
 CUDA-PathTracer/CUDA-PathTracer.vcxproj.filters
 CUDA-PathTracer/*.cso
+result/
