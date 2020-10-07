@@ -80,3 +80,16 @@ GlobalConfig CudaRender::GetConfig()
 {
     return config;
 }
+
+void CudaRender::SaveImage()
+{
+    char buffer[2048] = { 0 };
+
+    sprintf(buffer, "E:/Project/CUDA-PathTracer/result/%ds iteration %dpx-%dpx.png", iteration, config.width, config.height);
+    ImageIO::SavePng(buffer, config.width, config.height, &image[0]);
+}
+
+unsigned CudaRender::GetIteration()
+{
+    return iteration;
+}

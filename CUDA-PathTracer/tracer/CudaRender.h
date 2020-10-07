@@ -15,6 +15,8 @@ public:
     float3* ReverseImage(float3* image);
     float3* GetRenderReverseImage();
     GlobalConfig GetConfig();
+    void SaveImage();
+    unsigned GetIteration();
 
 private:
 	CudaRender();

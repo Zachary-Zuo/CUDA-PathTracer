@@ -32,19 +32,6 @@ App::App()
 void App::DoFrame()
 {
 	wnd.Gfx().BeginFrame(0.5f, 0.5f, 0.6f);
-	// imgui window to control simulation speed
-	//if (ImGui::Begin("Simulation Speed"))
-	//{
-	//	ImGui::SliderFloat("Speed Factor", &speed_factor, 0.0f, 4.0f);
-	//	ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-	//	ImGui::Text("Status: %s", wnd.kbd.KeyIsPressed(VK_SPACE) ? "PAUSED" : "RUNNING (hold spacebar to pause)");
-	//}
-	//ImGui::End();
-	// imgui windows to control camera and light
-
-	//bool imshow = true;
-	//ImGui::ShowDemoWindow(&imshow);
-
 
 	//Dock space
 	{
@@ -62,8 +49,6 @@ void App::DoFrame()
 		window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 		window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-		// When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background
-		// and handle the pass-thru hole, so we ask Begin() to not render a background.
 		if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
 			window_flags |= ImGuiWindowFlags_NoBackground;
 
@@ -94,6 +79,20 @@ void App::DoFrame()
 		ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h));
 	}
 
+	// imgui window to show rendering information
+	if (ImGui::Begin("Information"))
+	{
+		ImGui::Text("Framerate: %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::Text("Iteration: %d", render->GetIteration());
+		ImGui::Text("Rendered for %.0f s", timer.Peek());
+		//ImGui::Text("Status: %s", wnd.kbd.KeyIsPressed(VK_SPACE) ? "PAUSED" : "RUNNING (hold spacebar to pause)");
+		if (ImGui::Button("Save the result"))
+			render->SaveImage();
+	}
+
+	//bool imshow = true;
+	//ImGui::ShowDemoWindow(&imshow);
+
 	// present
 	wnd.Gfx().EndFrame();
 }
@@ -104,8 +103,8 @@ App::~App()
 
 int App::Go()
 {
-	
 	render->InitCudaScene();
+	timer.Mark();
 	while (true)
 	{
 		// process all messages pending, but to not block for new messages

@@ -21,8 +21,6 @@ private:
 	ImguiManager imgui;
 	Window wnd;
 	WindowTimer timer;
-	float speed_factor = 1.0f;
 	CudaRender* render;
 
-	static constexpr size_t nDrawables = 180;
 };
