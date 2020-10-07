@@ -7,6 +7,7 @@
 #include <cstring>
 #include "../tracer/parsescene.h"
 
+
 namespace dx = DirectX;
 
 GDIPlusManager gdipm;
@@ -25,6 +26,7 @@ App::App()
 	private:
 		Graphics& gfx;
 	};
+	render = CudaRender::getInstance();
 }
 
 void App::DoFrame()
@@ -40,12 +42,14 @@ void App::DoFrame()
 	//ImGui::End();
 	// imgui windows to control camera and light
 
-	if (ImGui::Begin(u8"IMGUI", false, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::Begin(u8"IMGUI", false, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImTextureID my_tex_id = wnd.Gfx().getTex(wnd.Gfx().renderImage());
-		float my_tex_w = (float)1920;
-		float my_tex_h = (float)1080;
-		ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 0.5f));
+		int imageWidth = render->GetConfig().width;
+		int imageHeight = render->GetConfig().height;
+		ImTextureID my_tex_id = wnd.Gfx().GetTex(render->GetRenderReverseImage(), imageWidth, imageHeight);
+		float my_tex_w = (float)imageWidth;
+		float my_tex_h = (float)imageHeight;
+		ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h));
 
 	}
 
@@ -62,7 +66,8 @@ App::~App()
 
 int App::Go()
 {
-	wnd.Gfx().InitCudaScene();
+	
+	render->InitCudaScene();
 	while (true)
 	{
 		// process all messages pending, but to not block for new messages

@@ -11,10 +11,7 @@
 #include <DirectXMath.h>
 #include <memory>
 #include <random>
-
-#include "../tracer/scene.h"
-#include "../tracer/parsescene.h"
-
+#include <thrust\device_vector.h>
 
 class Graphics
 {
@@ -77,9 +74,7 @@ public:
     void EnableImgui() noexcept;
     void DisableImgui() noexcept;
     bool IsImguiEnabled() const noexcept;
-    void InitCudaScene();
-    ID3D11ShaderResourceView* getTex(float3* image);
-    float3* renderImage();
+    ID3D11ShaderResourceView* GetTex(float3* image,int width,int height);
 
 private:
     DirectX::XMMATRIX projection;
@@ -94,16 +89,6 @@ private:
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_pTarget;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_pDSV;
 
-    GlobalConfig config;
-    unsigned iteration = 0;
-    bool vision_bvh = false;
-    bool reset_acc_image = false;
-    clock_t start = 0, last = 0;
-    //float3* image, * dev_ptr;
-    Scene scene;
-    cudaGraphicsResource* resource = NULL;
-
-    float3* image, * dev_ptr;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> pimgTex;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> tex;
 

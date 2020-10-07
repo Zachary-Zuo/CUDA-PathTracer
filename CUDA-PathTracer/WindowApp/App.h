@@ -5,6 +5,7 @@
 #include "WindowTimer.h"
 #include "ImguiManager.h"
 #include "Graphics.h"
+#include "../tracer/CudaRender.h"
 
 
 class App
@@ -21,6 +22,7 @@ private:
 	Window wnd;
 	WindowTimer timer;
 	float speed_factor = 1.0f;
+	CudaRender* render;
 
 	static constexpr size_t nDrawables = 180;
 };
