@@ -77,10 +77,9 @@ public:
     void EnableImgui() noexcept;
     void DisableImgui() noexcept;
     bool IsImguiEnabled() const noexcept;
-    bool findCUDADevice();
-    static bool dynlinkLoadD3D11API();
-    bool findDXDevice(char* device_name);
-    void Graphics::InitCudaScene();
+    void InitCudaScene();
+    ID3D11ShaderResourceView* getTex(float3* image);
+    float3* renderImage();
 
 private:
     DirectX::XMMATRIX projection;
@@ -103,6 +102,10 @@ private:
     //float3* image, * dev_ptr;
     Scene scene;
     cudaGraphicsResource* resource = NULL;
+
+    float3* image, * dev_ptr;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> pimgTex;
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> tex;
 
 #ifndef NDEBUG
     DxgiInfoManager infoManager;

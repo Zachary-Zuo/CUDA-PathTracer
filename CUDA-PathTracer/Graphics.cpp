@@ -125,11 +125,16 @@ Graphics::Graphics(HWND hWnd, int width, int height)
     // init imgui d3d impl
     ImGui_ImplDX11_Init(m_pDevice.Get(), m_pContext.Get());
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    cudaMalloc(&dev_ptr, 1920 * 1080 * sizeof(float3));
+    image = new float3[1920 * 1080];
 }
 
 Graphics::~Graphics()
 {
     ImGui_ImplDX11_Shutdown();
+    cudaFree(dev_ptr);
+    delete[]image;
 }
 
 void Graphics::EndFrame()
@@ -156,6 +161,8 @@ void Graphics::EndFrame()
             throw GFX_EXCEPT(hr);
         }
     }
+    tex.Reset();
+    pimgTex.Reset();
 }
 
 void Graphics::BeginFrame(float red, float green, float blue) noexcept
@@ -170,25 +177,6 @@ void Graphics::BeginFrame(float red, float green, float blue) noexcept
 
     const float color[] = { red, green, blue, 1.0f };
     m_pContext->ClearRenderTargetView(m_pTarget.Get(), color);
-
-
-    static uint64_t key = 0;
-    // Launch cuda kernel to generate sinewave in vertex buffer
-    //RunSineWaveKernel(m_extSemaphore, key, INFINITE, m_nWindowWidth, m_nWindowHeight, m_VertexBufPtr, m_cuda_stream);
-    iteration++;
-
-    reset_acc_image = false;
-    //Render(scene, 1920, 1080, scene.camera, iteration, false, m_VertexBufPtr,m_extSemaphore, key, INFINITE, m_cuda_stream);
-    float3* image, * dev_ptr;
-    cudaMalloc(&dev_ptr, 1920 * 1080 * sizeof(float3));
-    image = new float3[1920 * 1080];
-    Render(scene, config.width, config.height, scene.camera, iteration, reset_acc_image, dev_ptr);
-    cudaMemcpy(image, dev_ptr, 1920 * 1080 * sizeof(float3), cudaMemcpyDeviceToHost);
-    char buffer[2048] = { 0 };
-    sprintf(buffer, "E:/Project/CUDA-PathTracer/result/%ds iteration %dpx-%dpx.png", iteration, 1920, 1080);
-    ImageIO::SavePng(buffer, config.width, config.height, &image[0]);
-    cudaFree(dev_ptr);
-    delete[]image;
 }
 
 void Graphics::InitCudaScene()
@@ -196,6 +184,68 @@ void Graphics::InitCudaScene()
     std::string f = "E:/Project/CUDA-PathTracer/x64/Debug/scene.json";
     InitScene(f, config, scene);
     BeginRender(scene, 1920, 1080, 0.00100000005);
+}
+
+float3* Graphics::renderImage()
+{
+    static uint64_t key = 0;
+    // Launch cuda kernel to generate sinewave in vertex buffer
+    //RunSineWaveKernel(m_extSemaphore, key, INFINITE, m_nWindowWidth, m_nWindowHeight, m_VertexBufPtr, m_cuda_stream);
+    iteration++;
+
+    reset_acc_image = false;
+    //Render(scene, 1920, 1080, scene.camera, iteration, false, m_VertexBufPtr,m_extSemaphore, key, INFINITE, m_cuda_stream);
+
+    Render(scene, config.width, config.height, scene.camera, iteration, reset_acc_image, dev_ptr);
+    cudaMemcpy(image, dev_ptr, 1920 * 1080 * sizeof(float3), cudaMemcpyDeviceToHost);
+    //char buffer[2048] = { 0 };
+    //sprintf(buffer, "E:/Project/CUDA-PathTracer/result/%ds iteration %dpx-%dpx.png", iteration, 1920, 1080);
+    //ImageIO::SavePng(buffer, config.width, config.height, &image[0]);
+    return image;
+}
+
+ID3D11ShaderResourceView* Graphics::getTex(float3* image)
+{
+    float3* reverseImage = new float3[1920 * 1080];
+    for (int i = 0; i < 1080; i++)
+    {
+        for (int j = 0; j < 1920; j++)
+        {
+            reverseImage[(1079 - i) * 1920 + j] = image[i * 1920 + j];
+        }
+    }
+
+    // 创建纹理
+    D3D11_TEXTURE2D_DESC texDesc;
+    texDesc.Width = 1920;
+    texDesc.Height = 1080;
+    texDesc.MipLevels = 1;
+    texDesc.ArraySize = 1;
+    texDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+    texDesc.SampleDesc.Count = 1;		// 不使用多重采样
+    texDesc.SampleDesc.Quality = 0;
+    texDesc.Usage = D3D11_USAGE_DEFAULT;
+    texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    texDesc.CPUAccessFlags = 0;
+    texDesc.MiscFlags = 0;	// 指定需要生成mipmap
+
+    D3D11_SUBRESOURCE_DATA sd;
+    float3* pData = reverseImage;
+    sd.pSysMem = pData;
+    sd.SysMemPitch = 1920 * sizeof(float3);
+    sd.SysMemSlicePitch = 1920 * 1080 * sizeof(float3);
+
+    m_pDevice->CreateTexture2D(&texDesc, &sd, tex.GetAddressOf());
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+    srvDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = 1;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    m_pDevice->CreateShaderResourceView(tex.Get(), &srvDesc, pimgTex.GetAddressOf());
+    delete[]reverseImage;
+
+    return pimgTex.Get();
 }
 
 void Graphics::DrawIndexed(UINT count) noexcept(!IS_DEBUG)
