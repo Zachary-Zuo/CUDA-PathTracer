@@ -42,7 +42,49 @@ void App::DoFrame()
 	//ImGui::End();
 	// imgui windows to control camera and light
 
-	if (ImGui::Begin(u8"IMGUI", false, ImGuiWindowFlags_AlwaysAutoResize))
+	//bool imshow = true;
+	//ImGui::ShowDemoWindow(&imshow);
+
+
+	//Dock space
+	{
+		static bool opt_fullscreen = true;
+		static bool opt_padding = false;
+		static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+
+		ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+		ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(viewport->GetWorkPos());
+		ImGui::SetNextWindowSize(viewport->GetWorkSize());
+		ImGui::SetNextWindowViewport(viewport->ID);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+		window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+		// When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background
+		// and handle the pass-thru hole, so we ask Begin() to not render a background.
+		if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+			window_flags |= ImGuiWindowFlags_NoBackground;
+
+		if (!opt_padding)
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::Begin("DockSpace Demo", false, window_flags);
+		if (!opt_padding)
+			ImGui::PopStyleVar();
+
+		if (opt_fullscreen)
+			ImGui::PopStyleVar(2);
+
+		// DockSpace
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+		ImGui::End();
+	}
+
+	//ImGui::SetNextWindowSizeConstraints(ImVec2(imageWidth+15, imageHeight+35), ImVec2(FLT_MAX, FLT_MAX));
+	if (ImGui::Begin(u8"Render result", false))
 	{
 		int imageWidth = render->GetConfig().width;
 		int imageHeight = render->GetConfig().height;
@@ -50,11 +92,7 @@ void App::DoFrame()
 		float my_tex_w = (float)imageWidth;
 		float my_tex_h = (float)imageHeight;
 		ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h));
-
 	}
-
-	//bool imshow = true;
-	//ImGui::ShowDemoWindow(&imshow);
 
 	// present
 	wnd.Gfx().EndFrame();
