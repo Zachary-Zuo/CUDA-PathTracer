@@ -78,6 +78,7 @@ void App::DoFrame()
 		float my_tex_h = (float)imageHeight;
 		ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h));
 	}
+	ImGui::End();
 
 	// imgui window to show rendering information
 	if (ImGui::Begin("Information"))
@@ -89,6 +90,7 @@ void App::DoFrame()
 		if (ImGui::Button("Save the result"))
 			render->SaveImage();
 	}
+	ImGui::End();
 
 	//bool imshow = true;
 	//ImGui::ShowDemoWindow(&imshow);

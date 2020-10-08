@@ -1,7 +1,6 @@
 #pragma once
 #include "common.h"
 #include "ray.h"
-#include "wrap.h"
 #include <thrust/random.h>
 
 class Homogeneous {

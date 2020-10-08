@@ -39,8 +39,7 @@ public:
 		//shape behind ray
 		if (t1 < 0.f && t2 < 0.f)
 			return false;
-		//- +  t1 = + t2 = -
-		//+ + 
+
 		if (t1 < 0.f || t2 < 0.f){
 			float tt1 = t1, tt2 = t2;
 			t1 = tt1 < 0.f ? tt2 : tt1;

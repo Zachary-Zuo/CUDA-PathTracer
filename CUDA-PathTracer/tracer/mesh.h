@@ -7,7 +7,6 @@
 #include <assimp/postprocess.h>
 
 #include "bbox.h"
-#include "wrap.h"
 #include "intersection.h"
 
 

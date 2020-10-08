@@ -1,6 +1,4 @@
-#ifndef H_BBOX_H
-#define H_BBOX_H
-
+#pragma once
 #include "common.h"
 #include "ray.h"
 
@@ -100,5 +98,3 @@ public:
 		radius = sqrtf(dot(fmax - center, fmax - center));
 	}
 };
-
-#endif

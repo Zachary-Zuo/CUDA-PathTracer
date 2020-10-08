@@ -1,6 +1,4 @@
-#ifndef H_INFINITE_H
-#define H_INFINITE_H
-
+#pragma once
 #include "common.h"
 
 class Infinite{
@@ -93,5 +91,3 @@ private:
 		return c;
 	}
 };
-
-#endif

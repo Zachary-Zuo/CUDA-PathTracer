@@ -2,7 +2,6 @@
 #define H_BSSRDF_H
 
 #include "common.h"
-#include "wrap.h"
 
 struct BssrdfTable{
 	const int nRhoSamples, nRadiusSamples;

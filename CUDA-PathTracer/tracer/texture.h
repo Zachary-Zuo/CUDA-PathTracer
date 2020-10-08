@@ -2,8 +2,6 @@
 #include "common.h"
 #include "..\tracer\imageio.h"
 
-//using namespace std;
-
 class Texture{
 public:
 	std::vector<uchar4> data;

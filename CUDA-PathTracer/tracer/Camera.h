@@ -2,7 +2,6 @@
 
 #include "common.h"
 #include "ray.h"
-#include "wrap.h"
 
 class Camera
 {
