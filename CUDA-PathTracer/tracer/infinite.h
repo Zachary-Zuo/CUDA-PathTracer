@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include "Sampling.h"
 
 class Infinite{
 public:
@@ -14,7 +15,7 @@ public:
 	//TODO importance
 	__host__ __device__ void SampleLight(float3& pos, float2& uniform, float3& rad, Ray& ray, float3& nor, float& pdf, float epsilon = 0.01) const{
 		float pdfW;
-		float3 dir = UniformSphere(uniform.x, uniform.y, pdfW);
+		float3 dir = UniformSampleSphere(uniform.x, uniform.y, pdfW);
 		//dir = dir.x*u + dir.y*v + dir.z*w;
 		//float3 p = pos + dir*radius;
 		float costheta = dot(dir, v);

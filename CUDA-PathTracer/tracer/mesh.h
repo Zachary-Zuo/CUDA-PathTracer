@@ -8,6 +8,7 @@
 
 #include "bbox.h"
 #include "intersection.h"
+#include "Sampling.h"
 
 
 struct Vertex{
@@ -83,7 +84,7 @@ public:
 	}
 
 	__host__ __device__ void SampleShape(float3& pos, float2& u, float3& dir, float3& nor, float& pdf) const{
-		float2 uv = UniformTriangle(u.x, u.y);
+		float2 uv = UniformSampleTriangle(u.x, u.y);
 		float3 p = uv.x * v1.v + uv.y * v2.v + (1 - uv.x - uv.y)*v3.v;
 		float3 normal = normalize(uv.x*v1.n + uv.y*v2.n + (1 - uv.x - uv.y)*v3.n);
 		dir = p - pos;
@@ -94,10 +95,10 @@ public:
 	}
 
 	__host__ __device__ void SampleShape(float4& u, float3& pos, float3& dir, float3& nor, float& pdfA, float& pdfW){
-		float2 uv = UniformTriangle(u.x, u.y);
+		float2 uv = UniformSampleTriangle(u.x, u.y);
 		pos = uv.x * v1.v + uv.y * v2.v + (1 - uv.x - uv.y)*v3.v;
 	    nor = normalize(uv.x*v1.n + uv.y*v2.n + (1 - uv.x - uv.y)*v3.n);
-		dir = CosineHemiSphere(u.z, u.w, nor, pdfW);
+		dir = CosineSampleHemiSphere(u.z, u.w, nor, pdfW);
 		float3 uu, ww;
 		MakeCoordinate(nor, uu, ww);
 		dir = ToWorld(dir, uu, nor, ww);

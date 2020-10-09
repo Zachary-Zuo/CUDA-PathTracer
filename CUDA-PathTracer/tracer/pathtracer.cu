@@ -3,6 +3,7 @@
 #include "scene.h"
 #include "bvh.h"
 #include "device_launch_parameters.h"
+#include "Sampling.h"
 #include <thrust/random.h>
 #include <device_functions.h>
 #include <cuda_runtime.h>
@@ -496,7 +497,7 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 		if (dot(nor, in) < 0)
 			n = -n;
 
-		out = CosineHemiSphere(u.x, u.y, n, pdf);
+		out = CosineSampleHemiSphere(u.x, u.y, n, pdf);
 		float3 uu = dpdu, ww;
 		ww = cross(uu, n);
 		out = ToWorld(out, uu, n, ww);
@@ -584,7 +585,7 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 			n = -n;
 		if (u.x < 0.5){
 			float ux = u.x * 2.f;
-			out = CosineHemiSphere(ux, u.y, n, pdf);
+			out = CosineSampleHemiSphere(ux, u.y, n, pdf);
 			float3 uu = dpdu, ww;
 			ww = cross(uu, n);
 			out = ToWorld(out, uu, n, ww);
@@ -843,7 +844,7 @@ __global__ void Ao(int iter, float maxDist){
 	float offsetx = uniform(rng) - 0.5f;
 	float offsety = uniform(rng) - 0.5f;
 	float unuse;
-	float2 aperture = UniformDisk(uniform(rng), uniform(rng), unuse);//for dof
+	float2 aperture = UniformSampleDisk(uniform(rng), uniform(rng), unuse);//for dof
 	Ray ray = kernel_camera->GeneratePrimaryRay(x + offsetx, y + offsety, aperture);
 	ray.tmin = kernel_epsilon;
 
@@ -860,7 +861,7 @@ __global__ void Ao(int iter, float maxDist){
 	float pdf = 0.f;
 	if (dot(-ray.destination, nor) < 0.f)
 		nor = -nor;
-	float3 dir = CosineHemiSphere(uniform(rng), uniform(rng), nor, pdf);
+	float3 dir = CosineSampleHemiSphere(uniform(rng), uniform(rng), nor, pdf);
 	float3 uu = isect.dpdu, ww;
 	ww = cross(uu, nor);
 	dir = ToWorld(dir, uu, nor, ww);
@@ -893,7 +894,7 @@ __global__ void Path(int iter, int maxDepth){
 	float offsetx = uniform(rng) - 0.5f;
 	float offsety = uniform(rng) - 0.5f;
 	float unuse;
-	float2 aperture = UniformDisk(uniform(rng), uniform(rng), unuse);//for dof
+	float2 aperture = UniformSampleDisk(uniform(rng), uniform(rng), unuse);//for dof
 	Ray ray = kernel_camera->GeneratePrimaryRay(x + offsetx, y + offsety, aperture);
 	ray.tmin = kernel_epsilon;
 	
@@ -1038,7 +1039,7 @@ __global__ void Volpath(int iter, int maxDepth){
 	float offsetx = uniform(rng) - 0.5f;
 	float offsety = uniform(rng) - 0.5f;
 	float unuse;
-	float2 aperture = UniformDisk(uniform(rng), uniform(rng), unuse);//for dof
+	float2 aperture = UniformSampleDisk(uniform(rng), uniform(rng), unuse);//for dof
 	Ray ray = kernel_camera->GeneratePrimaryRay(x + offsetx, y + offsety, aperture);
 	ray.tmin = kernel_epsilon;
 	ray.medium = kernel_camera->medium == -1 ? nullptr : &kernel_mediums[kernel_camera->medium];
@@ -1419,7 +1420,7 @@ __device__ int GenerateCameraPath(int x, int y, BdptVertex* path, thrust::unifor
 	float offsety = uniform(rng) - 0.5f;
 	float unuse;
 	//bdpt doesn't support dof now
-	//float2 aperture = UniformDisk(uniform(rng), uniform(rng), unuse);//for dof
+	//float2 aperture = UniformSampleDisk(uniform(rng), uniform(rng), unuse);//for dof
 	Ray ray = kernel_camera->GeneratePrimaryRay(x + offsetx, y + offsety, make_float2(0, 0));
 	ray.tmin = kernel_epsilon;
 	ray.medium = kernel_camera->medium == -1 ? nullptr : &kernel_mediums[kernel_camera->medium];
@@ -2301,7 +2302,7 @@ __global__ void StochasticProgressivePhotonmapperFP(int iter, int maxDepth, floa
 	float offsety = uniform(rng) - 0.5f;
 	float unuse;
 	//ppm doesn't support dof now
-	//float2 aperture = UniformDisk(uniform(rng), uniform(rng), unuse);//for dof
+	//float2 aperture = UniformSampleDisk(uniform(rng), uniform(rng), unuse);//for dof
 	Ray ray = kernel_camera->GeneratePrimaryRay(x + offsetx, y + offsety, make_float2(0, 0));
 	ray.tmin = kernel_epsilon;
 
@@ -2448,7 +2449,7 @@ __global__ void InstantRadiosity(int iter, int vplIter, int maxDepth, float bias
 	float offsetx = uniform(rng) - 0.5f;
 	float offsety = uniform(rng) - 0.5f;
 	float unuse;
-	float2 aperture = UniformDisk(uniform(rng), uniform(rng), unuse);//for dof
+	float2 aperture = UniformSampleDisk(uniform(rng), uniform(rng), unuse);//for dof
 	Ray ray = kernel_camera->GeneratePrimaryRay(x + offsetx, y + offsety, aperture);
 	ray.tmin = kernel_epsilon;
 	float3 beta = { 1.f, 1.f, 1.f };

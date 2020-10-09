@@ -1,6 +1,7 @@
 #pragma once
 #include "common.h"
 #include "ray.h"
+#include "Sampling.h"
 #include <thrust/random.h>
 
 class Homogeneous {
@@ -149,7 +150,7 @@ public:
 	__device__ void SamplePhase(float2 u, float3& dir, float& phase, float& pdf) const {
 		if (g == 0) {
 			phase = ONE_OVER_FOUR_PI;
-			dir = UniformSphere(u.x, u.y, pdf);
+			dir = UniformSampleSphere(u.x, u.y, pdf);
 			return;
 		}
 
