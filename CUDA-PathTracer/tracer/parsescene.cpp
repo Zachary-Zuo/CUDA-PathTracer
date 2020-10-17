@@ -6,7 +6,10 @@
 #include <rapidjson\include\rapidjson\writer.h>
 #include <rapidjson\include\rapidjson\stringbuffer.h>
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include <fstream>
+#include <sstream>
 #include <sys\stat.h>
 
 using namespace rapidjson;
@@ -41,6 +44,15 @@ float3 getFloat3(Value& value){
 	}
 
 	return{ x[0], x[1], x[2] };
+}
+
+glm::mat4 string2mat4(std::stringstream& ss)
+{
+	float m[16];
+	for (int i = 0; i < 16; i++)
+		ss >> m[i];
+	glm::mat4 matCreate = glm::make_mat4(m);
+	return matCreate;
 }
 
 bool LoadScene(const char* filename, GlobalConfig& config, Scene& scene){
@@ -343,6 +355,7 @@ bool LoadScene(const char* filename, GlobalConfig& config, Scene& scene){
 					float3 rotate = unit.HasMember("rotate") ? getFloat3(unit["rotate"]) : make_float3(0, 0, 0);
 					string mediumInside = unit.HasMember("inside") ? unit["inside"].GetString() : "";
 					string mediumOutside = unit.HasMember("outside") ? unit["outside"].GetString() : "";
+					std::stringstream stransform = unit.HasMember("transform") ? std::stringstream(unit["transform"].GetString()) : std::stringstream("");
 					int mi = getMedium(mediumInside);
 					int mo = getMedium(mediumOutside);
 					glm::mat4 trs, t, r, s;
@@ -355,7 +368,7 @@ bool LoadScene(const char* filename, GlobalConfig& config, Scene& scene){
 					Mesh mesh;
 					mesh.matIdx = -1;
 					mesh.bssrdfIdx = -1;
-
+					glm::mat4 trans = string2mat4(stransform);
 
 					if (mat_name != "" || !(mi != -1 || mo != -1)){
 						int i;
@@ -379,7 +392,7 @@ bool LoadScene(const char* filename, GlobalConfig& config, Scene& scene){
 						}
 					}
 
-					mesh.LoadObjFromFile((base + file).c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals, trs);
+					mesh.LoadObjFromFile((base + file).c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals, trans);
 					for (int i = 0; i < mesh.triangles.size(); ++i){
 						Primitive primitive;
 						primitive.type = GT_TRIANGLE;
