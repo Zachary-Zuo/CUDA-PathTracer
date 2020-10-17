@@ -27,6 +27,7 @@ static void HandleError(cudaError_t err,
 {
 	if (err != cudaSuccess)
 	{
+		std::string s = cudaGetErrorString(err);
 		printf("%s in %s at line %d\n", cudaGetErrorString(err),
 			file, line);
 

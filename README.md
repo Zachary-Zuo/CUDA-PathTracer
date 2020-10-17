@@ -10,9 +10,9 @@ Interactive CUDA pathtracer that implements a variety of rendering techniques.
 
 ## TODO
 
-- [ ] Input Control
+- [x] Input Control
 
-- [ ] Window package
+- [x] Window package
 
 - [ ] Shape：
 
