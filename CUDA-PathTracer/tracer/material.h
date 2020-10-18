@@ -1,9 +1,5 @@
-#ifndef H_MATERIAL_H
-#define H_MATERIAL_H
-
+#pragma once
 #include "common.h"
-
-//using namespace std;
 
 enum class TransportMode { Radiance, Importance };
 
@@ -37,5 +33,3 @@ __host__ __device__ inline bool IsGlossy(MaterialType type){
 __host__ __device__ inline bool IsDelta(MaterialType type){
 	return (type == MT_MIRROR || type == MT_DIELECTRIC);
 }
-
-#endif

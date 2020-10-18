@@ -1,6 +1,4 @@
-#ifndef H_AREA_H
-#define H_AREA_H
-
+#pragma once
 #include "common.h"
 #include "mesh.h"
 
@@ -18,27 +16,25 @@ public:
 		ray = Ray(pos, normalize(dir), nullptr, epsilon, sqrtf(dot(dir, dir) - epsilon));
 	}
 
-	__host__ __device__ void SampleLight(float4& u, Ray& ray, float3& nor, float3& rad, float& pdfA, float& pdfW, float epsilon = 0.01){
+	__host__ __device__ void SampleLight(float4& u, Ray& ray, float3& n, float3& rad, float& pdfA, float& pdfW, float epsilon = 0.01){
 		float3 pos, dir;
-		triangle.SampleShape(u, pos, dir, nor, pdfA, pdfW);
+		triangle.SampleShape(u, pos, dir, n, pdfA, pdfW);
 		rad = radiance;
 		ray = Ray(pos, dir, nullptr, epsilon);
 	}
 
-	__host__ __device__ void Pdf(Ray& ray, float3& nor, float& pdfA, float& pdfW) const{
+	__host__ __device__ void Pdf(Ray& ray, float3& n, float& pdfA, float& pdfW) const{
 		float sa = triangle.GetSurfaceArea();
 		pdfA = 1.f / sa;
-		pdfW = fabs(dot(ray.destination, nor))*ONE_OVER_PI;
+		pdfW = fabs(dot(ray.destination, n))*ONE_OVER_PI;
 	}
 
 	__host__ __device__ float3 GetPower() const{
 		return radiance * triangle.GetSurfaceArea() * PI;
 	}
 
-	__host__ __device__ float3 Le(float3& nor, float3& dir) const{
-		if (dot(nor, dir) > 0.f) return radiance;
+	__host__ __device__ float3 Le(float3& n, float3& dir) const{
+		if (dot(n, dir) > 0.f) return radiance;
 		else return make_float3(0.f, 0.f, 0.f);
 	}
 };
-
-#endif
