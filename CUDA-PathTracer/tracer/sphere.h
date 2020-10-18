@@ -68,8 +68,8 @@ public:
 		//set intersection
 		if (isect){
 			isect->pos = ray(ray.tmax);
-			isect->nor = normalize(isect->pos - origin);
-			float3 normal = isect->nor;
+			isect->n = normalize(isect->pos - origin);
+			float3 normal = isect->n;
 			//calc uv
 			float costheta = dot(normal, make_float3(0.f, 1.f, 0.f));
 			float theta = acosf(costheta);

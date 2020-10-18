@@ -9,7 +9,7 @@ public:
 	static CudaRender* getInstance();
 	~CudaRender();
 
-    void InitCudaScene(std::string file = "E:/Project/CUDA-PathTracer/x64/Debug/scene.json");
+    void InitCudaScene(std::string file = "E:/Codes/gpu-pathtracer-1/scenes/scenes/material-testball/scene.json");
 
     float3* renderImage();
     float3* ReverseImage(float3* image);

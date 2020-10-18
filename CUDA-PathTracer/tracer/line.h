@@ -73,10 +73,10 @@ public:
 
 		if (isect){
 			isect->pos = ray(t);
-			isect->nor = -ray.destination;
+			isect->n = -ray.destination;
 			isect->uv = { s, sqrt(d2) / r };
 			float3 dpdu, dpdv;
-			MakeCoordinate(isect->nor, dpdu, dpdv);
+			MakeCoordinate(isect->n, dpdu, dpdv);
 			isect->dpdu = dpdu;
 			isect->matIdx = matIdx;
 			isect->lightIdx = -1;

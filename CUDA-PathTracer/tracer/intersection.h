@@ -3,7 +3,7 @@
 
 struct Intersection{
 	float3 pos;		//hit point
-	float3 nor;		//normal of hit point
+	float3 n;		//normal of hit point
 	float2 uv;		//tex coord of hit point
 	float3 dpdu;	//tangent 
 	

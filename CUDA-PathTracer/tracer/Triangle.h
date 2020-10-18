@@ -64,7 +64,7 @@ public:
 			isect->pos = ray(tt);
 			//不能默认文件里的法线已经归一化，这里需要手动归一化一下
 			//coffee场景里就因为这个问题导致渲染出现奇怪条纹，查了2天才查出来。。
-			isect->nor = normalize(v1.n * (1.f - b1 - b2) + v2.n*b1 + v3.n*b2);
+			isect->n = normalize(v1.n * (1.f - b1 - b2) + v2.n*b1 + v3.n*b2);
 			isect->uv = v1.uv*(1.f - b1 - b2) + v2.uv*b1 + v3.uv*b2;
 			isect->matIdx = matIdx;
 			isect->lightIdx = lightIdx;
