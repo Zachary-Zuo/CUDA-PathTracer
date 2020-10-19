@@ -72,26 +72,31 @@ public:
 			return 2;
 	}
 
-	__host__ __device__ bool Intersect(Ray& r) const{
+	__host__ __device__ bool Intersect(Ray& r) const {
 		//相交条件,光线进入平面的最大t值小于离开平面的最小t值
 		float3 inv_dir = { 1.f / r.destination.x, 1.f / r.destination.y, 1.f / r.destination.z };
-		float t1 = (fmin.x - r.origin.x)*inv_dir.x;
-		float t2 = (fmax.x - r.origin.x)*inv_dir.x;
-		float t3 = (fmin.y - r.origin.y)*inv_dir.y;
-		float t4 = (fmax.y - r.origin.y)*inv_dir.y;
-		float t5 = (fmin.z - r.origin.z)*inv_dir.z;
-		float t6 = (fmax.z - r.origin.z)*inv_dir.z;
+		float txNear = (fmin.x - r.origin.x) * inv_dir.x;
+		float txFar = (fmax.x - r.origin.x) * inv_dir.x;
+		float tyNear = (fmin.y - r.origin.y) * inv_dir.y;
+		float tyFar = (fmax.y - r.origin.y) * inv_dir.y;
+		float tzNear = (fmin.z - r.origin.z) * inv_dir.z;
+		float tzFar = (fmax.z - r.origin.z) * inv_dir.z;
 
 		//若相交tmin tmax即为交点
-		float tmin = fmaxf(fmaxf(fminf(t1, t2), fminf(t3, t4)), fminf(t5, t6));
-		float tmax = fminf(fminf(fmaxf(t1, t2), fmaxf(t3, t4)), fmaxf(t5, t6));
-		if (tmax <= 0.00001f) return false;//包围盒在射线后方
-		if (tmin > tmax)
+		float tNear = fmaxf(fmaxf(fminf(txNear, txFar), fminf(tyNear, tyFar)), fminf(tzNear, tzFar));
+		float tFar = fminf(fminf(fmaxf(txNear, txFar), fmaxf(tyNear, tyFar)), fmaxf(tzNear, tzFar));
+
+		// Update _tFar_ to ensure robust ray--bounds intersection
+		tFar *= 1 + 2 * gamma(3);
+
+		if (tFar <= 0.00001f) return false;//包围盒在射线后方
+		if (tNear > tFar)
 			return false;
-		if (tmin > r.tmax)
+		if (tNear > r.tmax)
 			return false;
 		return true;
 	}
+	
 
 	__host__ __device__ void boundingSphere(float3& center, float& radius) const{
 		center = Centric();

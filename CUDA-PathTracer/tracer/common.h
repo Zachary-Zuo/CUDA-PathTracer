@@ -21,6 +21,8 @@
 #define ONE_OVER_TWO_PI     0.1591549430923f
 #define ONE_OVER_FOUR_PI    0.0795774715461f
 
+#define MachineEpsilon (1.192092896e-07F * 0.5)
+
 static void HandleError(cudaError_t err,
 						const char* file,
 						int line)
@@ -104,6 +106,11 @@ inline float3 VecToFloat3(glm::vec3& v) {
 
 inline glm::vec3 Float3ToVec(float3& v) {
 	return glm::vec3(v.x, v.y, v.z);
+}
+
+__host__ __device__ inline float gamma(int n)
+{
+	return (n * MachineEpsilon) / (1 - n * MachineEpsilon);
 }
 
 __host__ __device__ inline void MakeCoordinate(float3& n, float3& u, float3& w)
