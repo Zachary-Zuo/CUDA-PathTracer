@@ -1,40 +1,50 @@
-# Realtime GPU Pathtracer using CUDA
+# Caster
 
-Interactive CUDA pathtracer that implements a variety of rendering techniques.
-
-
-
-## Features
+CUDA-based physical renderer
 
 
 
-## TODO
+## 1. Features
 
-- [x] Input Control
+### shape
 
-- [x] Window package
-
-- [ ] Shape：
-
-  - [ ] Sphere
-  - [ ] Triangle
-
-- [ ] Material
-
-   - [ ] Diffuse
-   - [ ] Dielectrics
-   
-- [ ] BVH
-
-   - [ ] SBVH (Spatial BVH) 
-   - [ ] QBVH (Quaternary BVH)
-   - [ ] CWBVH (Compressed Wide BVH)
+- Line
+- Sphere
+- Triangle
 
 
 
+### Material
+
+- Lambertian
+- Mirror
+- Dielectric
+- Rough Conductor
+- substrate
 
 
-## Dependencies
+
+## 2. Dependencies
 
 - CUDA 11.0
 - DX11
+
+
+
+## 3. Demo
+
+![Demo](images\Demo.png)
+
+
+
+## 4. Render result
+
+![bmw-m6](images\bmw-m6.png)
+
+
+
+![bmw-m6](images\staircase2.png)
+
+
+
+![bmw-m6](images\teapot-full.png)
