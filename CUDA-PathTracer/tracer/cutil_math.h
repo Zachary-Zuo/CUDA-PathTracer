@@ -961,6 +961,16 @@ inline __host__ __device__ uint4 min(uint4 a, uint4 b)
 // max
 ////////////////////////////////////////////////////////////////////////////////
 
+inline __host__ __device__ float fmaxf(float3 a)
+{
+	return max(max(a.x, a.y), a.z);
+}
+
+inline __host__ __device__ float fmaxf(float a, float b,float c)
+{
+	return max(max(a, b), c);
+}
+
 inline __host__ __device__ float2 fmaxf(float2 a, float2 b)
 {
 	return make_float2(fmaxf(a.x, b.x), fmaxf(a.y, b.y));

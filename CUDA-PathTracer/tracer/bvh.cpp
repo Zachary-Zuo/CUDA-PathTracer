@@ -213,13 +213,13 @@ void BVH::LoadOrBuildBVH(std::vector<Primitive>& primitives, std::string file){
 	else{
 		build(primitives);
 		int size = prims.size();
-		fp = fopen(bvhfile.c_str(), "wb");
-		fwrite(&total_nodes, sizeof(int), 1, fp);
-		fwrite(&size, sizeof(int), 1, fp);
-		fwrite(&root_box.fmin.x, sizeof(float) * 3, 1, fp);
-		fwrite(&root_box.fmax.x, sizeof(float) * 3, 1, fp);
-		fwrite(&prims[0], sizeof(Primitive)*size, 1, fp);
-		fwrite(linear_root, sizeof(LinearBVHNode)*total_nodes, 1, fp);
-		fclose(fp);
+		//fp = fopen(bvhfile.c_str(), "wb");
+		//fwrite(&total_nodes, sizeof(int), 1, fp);
+		//fwrite(&size, sizeof(int), 1, fp);
+		//fwrite(&root_box.fmin.x, sizeof(float) * 3, 1, fp);
+		//fwrite(&root_box.fmax.x, sizeof(float) * 3, 1, fp);
+		//fwrite(&prims[0], sizeof(Primitive)*size, 1, fp);
+		//fwrite(linear_root, sizeof(LinearBVHNode)*total_nodes, 1, fp);
+		//fclose(fp);
 	}
 }

@@ -55,15 +55,25 @@ public:
 		if (b2 < 0.0 || b1 + b2 > 1.0)
 			return false;
 
+		float maxD = fmaxf(fabs(ray.destination));
+		float maxE = fmaxf(fmaxf(fabs(v1.v)), fmaxf(fabs(v2.v)), fmaxf(fabs(v3.v)));
+		float deltaE = gamma(1) * maxE;
+		float deltaS1 = 2 * (gamma(2) * maxD * maxE + deltaE * maxD);
+		float deltaS = gamma(1) * fmaxf(fabs(v1.v));
+		float maxS = fmaxf(fabs(s));
+		float maxS1 = fmaxf(fabs(s1));
+		float deltaS2 = 2 * (gamma(2) * maxS * maxS1 + deltaS * maxS1 + deltaS1 * maxS);
+		float maxS2 = fmaxf(fabs(s2));
+		float deltaT = 2 * (gamma(2) * maxE * maxS2 + deltaS2 * maxE + deltaE * maxS2) * abs(invDivisor);
+
 		float tt = dot(e2, s2) * invDivisor;
-		if (tt < ray.tmin || tt > ray.tmax)
+		if (tt < ray.tmin+deltaT || tt > ray.tmax)
 			return false;
 
 		ray.tmax = tt;
 		if (isect){
 			isect->pos = ray(tt);
 			//不能默认文件里的法线已经归一化，这里需要手动归一化一下
-			//coffee场景里就因为这个问题导致渲染出现奇怪条纹，查了2天才查出来。。
 			isect->n = normalize(v1.n * (1.f - b1 - b2) + v2.n*b1 + v3.n*b2);
 			isect->uv = v1.uv*(1.f - b1 - b2) + v2.uv*b1 + v3.uv*b2;
 			isect->matIdx = matIdx;
