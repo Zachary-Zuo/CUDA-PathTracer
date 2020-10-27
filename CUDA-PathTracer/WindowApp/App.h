@@ -18,6 +18,7 @@ public:
 private:
 	void DoFrame();
 private:
+	bool enableCudaRenderer=false;
 	ImguiManager imgui;
 	Window wnd;
 	WindowTimer timer;

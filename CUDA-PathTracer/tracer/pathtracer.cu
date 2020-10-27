@@ -2712,9 +2712,9 @@ void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsig
 
 	IntegratorType type = scene.integrator.type;
 	if (type == IT_AO)
-		Ao << <grid, block >> > (iter, scene.integrator.maxDist);
+		Ao <<<grid, block >>> (iter, scene.integrator.maxDist);
 	else if (type == IT_PT)
-		Path << <grid, block >> > (iter, scene.integrator.maxDepth);
+		Path <<<grid, block >>> (iter, scene.integrator.maxDepth);
 	else if (type == IT_VPT)
 		Volpath << <grid, block >> > (iter, scene.integrator.maxDepth);
 	else if (type == IT_LT) {
