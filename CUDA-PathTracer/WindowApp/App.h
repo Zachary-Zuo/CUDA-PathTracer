@@ -6,6 +6,7 @@
 #include "ImguiManager.h"
 #include "Graphics.h"
 #include "../tracer/CudaRender.h"
+#include "../Editor/Drawable/Box.h"
 
 
 class App
@@ -23,5 +24,6 @@ private:
 	Window wnd;
 	WindowTimer timer;
 	CudaRender* render;
+	std::vector<std::unique_ptr<class Box>> boxes;
 
 };

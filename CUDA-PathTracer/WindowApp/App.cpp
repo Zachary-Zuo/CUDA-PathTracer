@@ -26,6 +26,20 @@ App::App()
 	private:
 		Graphics& gfx;
 	};
+	std::mt19937 rng(std::random_device{}());
+	std::uniform_real_distribution<float> adist(0.0f, 3.1415f * 2.0f);
+	std::uniform_real_distribution<float> ddist(0.0f, 3.1415f * 2.0f);
+	std::uniform_real_distribution<float> odist(0.0f, 3.1415f * 0.3f);
+	std::uniform_real_distribution<float> rdist(6.0f, 20.0f);
+	for (auto i = 0; i < 80; i++)
+	{
+		boxes.push_back(std::make_unique<Box>(
+			wnd.Gfx(), rng, adist,
+			ddist, odist, rdist
+			));
+	}
+	wnd.Gfx().SetProjection(DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 40.0f));
+
 	if (enableCudaRenderer)
 	{
 		render = CudaRender::getInstance();
@@ -36,9 +50,13 @@ App::App()
 void App::DoFrame()
 {
 	wnd.Gfx().BeginFrame(0.5f, 0.5f, 0.6f);
-	const float c = sin(timer.Peek()) / 2.0f + 0.5f;
-	wnd.Gfx().ClearBuffer(c, c, 1.0f);
-	wnd.Gfx().DrawTestTriangle();
+	auto dt = timer.Mark();
+	wnd.Gfx().ClearBuffer(0.07f, 0.0f, 0.12f);
+	for (auto& b : boxes)
+	{
+		b->Update(dt);
+		b->Draw(wnd.Gfx());
+	}
 	wnd.Gfx().EndFrame();
 
 	if (enableCudaRenderer)
@@ -120,8 +138,8 @@ int App::Go()
 	{
 		render->InitCudaScene();
 	}
-	
-	timer.Mark();
+	auto dt = timer.Mark();
+	wnd.Gfx().ClearBuffer(0.07f, 0.0f, 0.12f);
 	while (true)
 	{
 		// process all messages pending, but to not block for new messages
