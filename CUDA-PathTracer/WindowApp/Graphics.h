@@ -66,6 +66,8 @@ public:
     ~Graphics();
     void EndFrame();
     void BeginFrame(float red, float green, float blue) noexcept;
+    void ClearBuffer(float red, float green, float blue) noexcept;
+    void DrawTestTriangle();
     void DrawIndexed(UINT count) noexcept(!IS_DEBUG);
     void SetProjection(DirectX::FXMMATRIX proj) noexcept;
     DirectX::XMMATRIX GetProjection() const noexcept;
