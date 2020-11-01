@@ -7,22 +7,22 @@ class IndexedTriangleList
 {
 public:
 	IndexedTriangleList() = default;
-	IndexedTriangleList( std::vector<T> verts_in,std::vector<unsigned short> indices_in )
+	IndexedTriangleList(std::vector<T> verts_in, std::vector<unsigned short> indices_in)
 		:
-		vertices( std::move( verts_in ) ),
-		indices( std::move( indices_in ) )
+		vertices(std::move(verts_in)),
+		indices(std::move(indices_in))
 	{
-		assert( vertices.size() > 2 );
-		assert( indices.size() % 3 == 0 );
+		assert(vertices.size() > 2);
+		assert(indices.size() % 3 == 0);
 	}
-	void Transform( DirectX::FXMMATRIX matrix )
+	void Transform(DirectX::FXMMATRIX matrix)
 	{
-		for( auto& v : vertices )
+		for (auto& v : vertices)
 		{
-			const DirectX::XMVECTOR pos = DirectX::XMLoadFloat3( &v.pos );
+			const DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&v.pos);
 			DirectX::XMStoreFloat3(
 				&v.pos,
-				DirectX::XMVector3Transform( pos,matrix )
+				DirectX::XMVector3Transform(pos, matrix)
 			);
 		}
 	}
