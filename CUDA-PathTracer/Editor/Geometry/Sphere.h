@@ -1,7 +1,7 @@
 #pragma once
 #include "IndexedTriangleList.h"
 #include <DirectXMath.h>
-#include "../EditorMath.h"
+#include "../../CasterLabmath.h"
 
 class Sphere
 {
@@ -15,8 +15,8 @@ public:
 
 		constexpr float radius = 1.0f;
 		const auto base = dx::XMVectorSet( 0.0f,0.0f,radius,0.0f );
-		const float lattitudeAngle = PI / latDiv;
-		const float longitudeAngle = 2.0f * PI / longDiv;
+		const float lattitudeAngle = 3.14159265f / latDiv;// PI / latDiv;
+		const float longitudeAngle = 2.0f * 3.14159265f / longDiv;// PI / longDiv;
 
 		std::vector<V> vertices;
 		for( int iLat = 1; iLat < latDiv; iLat++ )

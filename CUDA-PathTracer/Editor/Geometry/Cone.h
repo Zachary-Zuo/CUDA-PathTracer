@@ -1,7 +1,7 @@
 #pragma once
 #include "IndexedTriangleList.h"
 #include <DirectXMath.h>
-#include "../EditorMath.h"
+#include "../../CasterLabmath.h"
 
 class Cone
 {
@@ -13,7 +13,7 @@ public:
 		assert( longDiv >= 3 );
 
 		const auto base = dx::XMVectorSet( 1.0f,0.0f,-1.0f,0.0f );
-		const float longitudeAngle = 2.0f * PI / longDiv;
+		const float longitudeAngle = 2.0f * 3.14159265f / longDiv;// PI / longDiv;
 
 		// base vertices
 		std::vector<V> vertices;

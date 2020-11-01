@@ -1,7 +1,7 @@
 #pragma once
 #include "IndexedTriangleList.h"
 #include <DirectXMath.h>
-#include "../EditorMath.h"
+#include "../../CasterLabmath.h"
 
 class Prism
 {
