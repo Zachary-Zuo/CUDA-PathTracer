@@ -1,7 +1,7 @@
 #include "Pyramid.h"
 #include "../Bindable/BindableBase.h"
 #include "../../WindowApp/GraphicsThrowMacros.h"
-#include "Cone.h"
+#include "../Geometry/Cone.h"
 
 
 Pyramid::Pyramid(Graphics& gfx,

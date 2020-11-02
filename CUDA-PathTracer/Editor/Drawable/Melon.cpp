@@ -1,7 +1,7 @@
 #include "Melon.h"
 #include "../Bindable/BindableBase.h"
 #include "../../WindowApp/GraphicsThrowMacros.h"
-#include "Sphere.h"
+#include "../Geometry/Sphere.h"
 
 
 Melon::Melon(Graphics& gfx,

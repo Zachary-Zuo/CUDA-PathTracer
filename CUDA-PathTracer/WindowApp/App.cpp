@@ -6,8 +6,8 @@
 #include "../imgui/imgui.h"
 #include <cstring>
 #include "../tracer/parsescene.h"
-#include "../Editor/Geometry/Melon.h"
-#include "../Editor/Geometry/Pyramid.h"
+#include "../Editor/Drawable/Melon.h"
+#include "../Editor/Drawable/Pyramid.h"
 #include "../CasterLabmath.h"
 #include "../Editor/Surface.h"
 #include "../Editor/Drawable/Sheet.h"
