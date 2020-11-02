@@ -11,18 +11,18 @@ namespace Gdiplus
 
 #pragma comment( lib,"gdiplus.lib" )
 
-Surface::Surface( unsigned int width,unsigned int height ) noexcept
+Surface::Surface(unsigned int width, unsigned int height) noexcept
 	:
-	pBuffer( std::make_unique<Color[]>( width * height ) ),
-	width( width ),
-	height( height )
+	pBuffer(std::make_unique<Color[]>(width* height)),
+	width(width),
+	height(height)
 {}
 
-Surface& Surface::operator=( Surface&& donor ) noexcept
+Surface& Surface::operator=(Surface&& donor) noexcept
 {
 	width = donor.width;
 	height = donor.height;
-	pBuffer = std::move( donor.pBuffer );
+	pBuffer = std::move(donor.pBuffer);
 	donor.pBuffer = nullptr;
 	return *this;
 }
@@ -85,7 +85,7 @@ const Surface::Color* Surface::GetBufferPtrConst() const noexcept
 	return pBuffer.get();
 }
 
-Surface Surface::FromFile( const std::string& name )
+Surface Surface::FromFile(const std::string& name)
 {
 	unsigned int width = 0;
 	unsigned int height = 0;
@@ -94,32 +94,32 @@ Surface Surface::FromFile( const std::string& name )
 	{
 		// convert filenam to wide string (for Gdiplus)
 		wchar_t wideName[512];
-		mbstowcs_s( nullptr,wideName,name.c_str(),_TRUNCATE );
+		mbstowcs_s(nullptr, wideName, name.c_str(), _TRUNCATE);
 
-		Gdiplus::Bitmap bitmap( wideName );
-		if( bitmap.GetLastStatus() != Gdiplus::Status::Ok )
+		Gdiplus::Bitmap bitmap(wideName);
+		if (bitmap.GetLastStatus() != Gdiplus::Status::Ok)
 		{
 			std::stringstream ss;
 			ss << "Loading image [" << name << "]: failed to load.";
-			throw Exception( __LINE__,__FILE__ ,ss.str() );
+			throw Exception(__LINE__, __FILE__, ss.str());
 		}
 
 		width = bitmap.GetWidth();
 		height = bitmap.GetHeight();
-		pBuffer = std::make_unique<Color[]>( width * height );
+		pBuffer = std::make_unique<Color[]>(width * height);
 
-		for( unsigned int y = 0; y < height; y++ )
+		for (unsigned int y = 0; y < height; y++)
 		{
-			for( unsigned int x = 0; x < width; x++ )
+			for (unsigned int x = 0; x < width; x++)
 			{
 				Gdiplus::Color c;
-				bitmap.GetPixel( x,y,&c );
+				bitmap.GetPixel(x, y, &c);
 				pBuffer[y * width + x] = c.GetValue();
 			}
 		}
 	}
 
-	return Surface( width,height,std::move( pBuffer ) );
+	return Surface(width, height, std::move(pBuffer));
 }
 
 void Surface::Save( const std::string& filename ) const
@@ -183,11 +183,11 @@ void Surface::Save( const std::string& filename ) const
 	}
 }
 
-void Surface::Copy( const Surface& src ) noexcept(!IS_DEBUG)
+void Surface::Copy(const Surface& src) noexcept(!IS_DEBUG)
 {
-	assert( width == src.width );
-	assert( height == src.height );
-	memcpy( pBuffer.get(),src.pBuffer.get(),width * height * sizeof( Color ) );
+	assert(width == src.width);
+	assert(height == src.height);
+	memcpy(pBuffer.get(), src.pBuffer.get(), width * height * sizeof(Color));
 }
 
 Surface::Surface( unsigned int width,unsigned int height,std::unique_ptr<Color[]> pBufferParam ) noexcept
