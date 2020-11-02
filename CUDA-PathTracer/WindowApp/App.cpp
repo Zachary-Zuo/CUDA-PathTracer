@@ -9,6 +9,7 @@
 #include "../Editor/Geometry/Melon.h"
 #include "../Editor/Geometry/Pyramid.h"
 #include "../CasterLabmath.h"
+#include "../Editor/Surface.h"
 
 
 namespace dx = DirectX;
@@ -66,6 +67,8 @@ App::App()
 	Factory f(wnd.Gfx());
 	drawables.reserve(nDrawables);
 	std::generate_n(std::back_inserter(drawables), nDrawables, f);
+
+	const auto s = Surface::FromFile("E:/Project/CUDA-PathTracer/CUDA-PathTracer/Images/kappa50.png");
 
 	wnd.Gfx().SetProjection(DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 40.0f));
 
