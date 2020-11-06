@@ -5,6 +5,7 @@
 #include "WindowTimer.h"
 #include "ImguiManager.h"
 #include "Graphics.h"
+#include "../Editor/Camera.h"
 #include "../tracer/CudaRender.h"
 #include "../Editor/Drawable/Box.h"
 
@@ -24,7 +25,9 @@ private:
 	Window wnd;
 	WindowTimer timer;
 	CudaRender* render;
+	EditorCamera cam;
 	std::vector<std::unique_ptr<class Drawable>> drawables;
 	static constexpr size_t nDrawables = 180;
+	float speed_factor = 1.0f;
 
 };

@@ -172,6 +172,7 @@ void Graphics::BeginFrame(float red, float green, float blue) noexcept
 
     const float color[] = { red, green, blue, 1.0f };
     m_pContext->ClearRenderTargetView(m_pTarget.Get(), color);
+    m_pContext->ClearDepthStencilView(m_pDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0u);
 }
 
 ID3D11ShaderResourceView* Graphics::GetTex(float3* image, int width, int height)
