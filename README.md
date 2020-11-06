@@ -1,12 +1,14 @@
 # Caster
 
-CUDA-based physical renderer
+CUDA-based physical renderer with editor
 
 
 
 ## 1. Features
 
-### shape
+### 1.1 Physical renderer
+
+### Shape
 
 - Line
 - Sphere
@@ -21,6 +23,19 @@ CUDA-based physical renderer
 - Dielectric
 - Rough Conductor
 - substrate
+
+
+
+### Tracer
+
+- Path tracing
+
+
+
+## 1.2 Editor
+
+- Camera
+- Edit by imgui
 
 
 
@@ -39,12 +54,8 @@ CUDA-based physical renderer
 
 ## 4. Render result
 
-![bmw-m6](images/bmw-m6.png)
+![staircase2](images/staircase2.png)
 
 
 
-![bmw-m6](images/staircase2.png)
-
-
-
-![bmw-m6](images/teapot-full.png)
+![teapot-full](images/teapot-full.png)
