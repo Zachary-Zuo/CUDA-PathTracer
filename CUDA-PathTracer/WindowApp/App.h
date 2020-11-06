@@ -8,6 +8,7 @@
 #include "../Editor/Camera.h"
 #include "../tracer/CudaRender.h"
 #include "../Editor/Drawable/Box.h"
+#include "../Editor/PointLight.h"
 
 
 class App
@@ -26,6 +27,7 @@ private:
 	WindowTimer timer;
 	CudaRender* render;
 	EditorCamera cam;
+	PointLight light;
 	std::vector<std::unique_ptr<class Drawable>> drawables;
 	static constexpr size_t nDrawables = 180;
 	float speed_factor = 1.0f;

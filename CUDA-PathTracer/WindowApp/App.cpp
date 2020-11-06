@@ -6,13 +6,8 @@
 #include "../imgui/imgui.h"
 #include <cstring>
 #include "../tracer/parsescene.h"
-#include "../Editor/Drawable/Melon.h"
-#include "../Editor/Drawable/Pyramid.h"
 #include "../CasterLabmath.h"
 #include "../Editor/Surface.h"
-#include "../Editor/Drawable/Sheet.h"
-#include "../Editor/Drawable/SkinnedBox.h"
-
 
 namespace dx = DirectX;
 
@@ -20,7 +15,8 @@ GDIPlusManager gdipm;
 
 App::App()
 	:
-	wnd(1920, 1080, "CUDA Path Tracer")
+	wnd(1920, 1080, "The Donkey Fart Box"),
+	light(wnd.Gfx())
 {
 	class Factory
 	{
@@ -31,37 +27,10 @@ App::App()
 		{}
 		std::unique_ptr<Drawable> operator()()
 		{
-			switch (typedist(rng))
-			{
-			case 0:
-				return std::make_unique<Pyramid>(
-					gfx, rng, adist, ddist,
-					odist, rdist
-					);
-			case 1:
 				return std::make_unique<Box>(
 					gfx, rng, adist, ddist,
 					odist, rdist, bdist
 					);
-			case 2:
-				return std::make_unique<Melon>(
-					gfx, rng, adist, ddist,
-					odist, rdist, longdist, latdist
-					);
-			case 3:
-				return std::make_unique<Sheet>(
-					gfx, rng, adist, ddist,
-					odist, rdist
-					);
-			case 4:
-				return std::make_unique<SkinnedBox>(
-					gfx, rng, adist, ddist,
-					odist, rdist
-					);
-			default:
-				assert(false && "bad drawable type in factory");
-				return {};
-			}
 		}
 	private:
 		Graphics& gfx;
@@ -71,9 +40,6 @@ App::App()
 		std::uniform_real_distribution<float> odist{ 0.0f,PI * 0.08f };
 		std::uniform_real_distribution<float> rdist{ 6.0f,20.0f };
 		std::uniform_real_distribution<float> bdist{ 0.4f,3.0f };
-		std::uniform_int_distribution<int> latdist{ 5,20 };
-		std::uniform_int_distribution<int> longdist{ 10,40 };
-		std::uniform_int_distribution<int> typedist{ 0,4 };
 	};
 
 	drawables.reserve(nDrawables);
@@ -90,14 +56,18 @@ App::App()
 
 void App::DoFrame()
 {
+	const auto dt = timer.Mark() * speed_factor;
 	wnd.Gfx().BeginFrame(0.07f, 0.0f, 0.12f);
 	wnd.Gfx().SetCamera(cam.GetMatrix());
-	const auto dt = timer.Mark() * speed_factor;
+	light.Bind(wnd.Gfx());
+	
 	for (auto& d : drawables)
 	{
 		d->Update(wnd.kbd.KeyIsPressed(VK_SPACE) ? 0.0f : dt);
 		d->Draw(wnd.Gfx());
 	}
+
+	light.Draw(wnd.Gfx());
 
 	if (ImGui::Begin("Simulation Speed"))
 	{
@@ -108,6 +78,7 @@ void App::DoFrame()
 	ImGui::End();
 	// imgui window to control camera
 	cam.SpawnControlWindow();
+	light.SpawnControlWindow();
 
 	if (enableCudaRenderer)
 	{
