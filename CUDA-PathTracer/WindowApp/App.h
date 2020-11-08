@@ -7,7 +7,6 @@
 #include "Graphics.h"
 #include "../Editor/Camera.h"
 #include "../tracer/CudaRender.h"
-#include "../Editor/Drawable/Box.h"
 #include "../Editor/PointLight.h"
 
 
