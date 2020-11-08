@@ -20,6 +20,9 @@ public:
 	~App();
 private:
 	void DoFrame();
+	void SpawnSimulationWindow() noexcept;
+	void SpawnBoxWindowManagerWindow() noexcept;
+	void SpawnBoxWindows() noexcept;
 private:
 	bool enableCudaRenderer=false;
 	ImguiManager imgui;
