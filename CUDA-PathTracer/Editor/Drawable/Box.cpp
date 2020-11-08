@@ -78,10 +78,20 @@ bool Box::SpawnControlWindow(int id, Graphics& gfx) noexcept
 	bool open = true;
 	if (ImGui::Begin(("Box "s + std::to_string(id)).c_str(), &open))
 	{
+		ImGui::Text("Material Properties");
 		const auto cd = ImGui::ColorEdit3("Material Color", &materialConstants.color.x);
 		const auto sid = ImGui::SliderFloat("Specular Intensity", &materialConstants.specularIntensity, 0.05f, 4.0f, "%.2f");
 		const auto spd = ImGui::SliderFloat("Specular Power", &materialConstants.specularPower, 1.0f, 200.0f, "%.2f");
 		dirty = cd || sid || spd;
+
+		ImGui::Text("Position");
+		ImGui::SliderFloat("R", &r, 0.0f, 80.0f, "%.1f");
+		ImGui::SliderAngle("Theta", &theta, -180.0f, 180.0f);
+		ImGui::SliderAngle("Phi", &phi, -89.0f, 89.0f);
+		ImGui::Text("Orientation");
+		ImGui::SliderAngle("Roll", &roll, -180.0f, 180.0f);
+		ImGui::SliderAngle("Pitch", &pitch, -180.0f, 180.0f);
+		ImGui::SliderAngle("Yaw", &yaw, -180.0f, 180.0f);
 	}
 	ImGui::End();
 
@@ -89,8 +99,10 @@ bool Box::SpawnControlWindow(int id, Graphics& gfx) noexcept
 	{
 		SyncMaterial(gfx);
 	}
+
 	return open;
 }
+
 
 void Box::SyncMaterial(Graphics& gfx) noexcept(!IS_DEBUG)
 {
