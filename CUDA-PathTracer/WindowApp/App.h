@@ -8,6 +8,7 @@
 #include "../Editor/Camera.h"
 #include "../tracer/CudaRender.h"
 #include "../Editor/PointLight.h"
+#include <set>
 
 
 class App
@@ -31,5 +32,6 @@ private:
 	std::vector<std::unique_ptr<class Drawable>> drawables;
 	static constexpr size_t nDrawables = 180;
 	float speed_factor = 1.0f;
-
+	std::optional<int> comboBoxIndex;
+	std::set<int> boxControlIds;
 };
