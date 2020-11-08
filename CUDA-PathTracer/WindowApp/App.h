@@ -27,6 +27,7 @@ private:
 	CudaRender* render;
 	EditorCamera cam;
 	PointLight light;
+	std::vector<class Box*> boxes;
 	std::vector<std::unique_ptr<class Drawable>> drawables;
 	static constexpr size_t nDrawables = 180;
 	float speed_factor = 1.0f;
