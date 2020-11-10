@@ -25,6 +25,7 @@ private:
 	void SpawnBoxWindows() noexcept;
 private:
 	bool enableCudaRenderer=false;
+	bool enableEditor = true;
 	ImguiManager imgui;
 	Window wnd;
 	WindowTimer timer;
