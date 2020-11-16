@@ -4,6 +4,7 @@
 #include "bvh.h"
 #include "device_launch_parameters.h"
 #include "Sampling.h"
+#include <curand_kernel.h>
 #include <thrust/random.h>
 #include <device_functions.h>
 #include <cuda_runtime.h>
@@ -39,16 +40,6 @@ __device__ int kernel_light_distribution_size;
 //不同场景需要不同的epsilon，不知道怎么样优雅的实现
 __device__ float kernel_epsilon;
 
-__device__ inline unsigned int WangHash(unsigned int seed)
-{
-	seed = (seed ^ 61) ^ (seed >> 16);
-	seed = seed + (seed << 3);
-	seed = seed ^ (seed >> 4);
-	seed = seed * 0x27d4eb2d;
-	seed = seed ^ (seed >> 15);
-
-	return seed;
-}
 
 __host__ __device__ inline float DielectricFresnel(float cosi, float cost, const float& etai, const float& etat) {
 	float Rparl = (etat * cosi - etai * cost) / (etat * cosi + etai * cost);
@@ -852,24 +843,25 @@ __global__ void Ao(int iter, float maxDist) {
 	Intersection isect;
 	bool intersect = Intersect(ray, &isect);
 	if (!intersect) {
-		kernel_color[pixel] = { 0, 0, 0 };
+		kernel_color[pixel] += { 1, 1, 1 };
 		return;
 	}
 
 	float3 pos = isect.pos;
-	float3 nor = isect.n;
+	float3 n = isect.n;
 	float pdf = 0.f;
-	if (dot(-ray.destination, nor) < 0.f)
-		nor = -nor;
-	float3 dir = CosineSampleHemiSphere(uniform(rng), uniform(rng), nor, pdf);
-	float3 uu = isect.dpdu, ww;
-	ww = cross(uu, nor);
-	dir = ToWorld(dir, uu, nor, ww);
-	float cosine = dot(dir, nor);
-	Ray r(pos, dir, nullptr, kernel_epsilon, maxDist);
+	if (dot(-ray.destination, n) < 0.f)
+		n = -n;
+	float3 wi = CosineSampleHemiSphere(uniform(rng), uniform(rng), n, pdf);
+	float3 s = isect.dpdu;
+	float3 t = cross(s, n);
+	wi = ToWorld(wi, s, n, t);
+
+	float cosine = dot(wi, n);
+	Ray r(pos, wi, nullptr, kernel_epsilon, maxDist);
 	intersect = IntersectPrimitive(r);
 	if (!intersect) {
-		float v = cosine * ONE_OVER_PI / pdf;
+		float v = cosine / pdf;
 		L += make_float3(v, v, v);
 	}
 
@@ -2712,9 +2704,9 @@ void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsig
 
 	IntegratorType type = scene.integrator.type;
 	if (type == IT_AO)
-		Ao <<<grid, block >>> (iter, scene.integrator.maxDist);
+		Ao << <grid, block >> > (iter, scene.integrator.maxDist);
 	else if (type == IT_PT)
-		Path <<<grid, block >>> (iter, scene.integrator.maxDepth);
+		Path << <grid, block >> > (iter, scene.integrator.maxDepth);
 	else if (type == IT_VPT)
 		Volpath << <grid, block >> > (iter, scene.integrator.maxDepth);
 	else if (type == IT_LT) {
@@ -2750,4 +2742,3 @@ void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsig
 	grid.y = height / block.y;
 	Output << <grid, block >> > (iter, output, reset, camera->filmic, type);
 }
-

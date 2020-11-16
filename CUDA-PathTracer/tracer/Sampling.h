@@ -36,7 +36,7 @@ __host__ __device__ inline float3 CosineSampleHemiSphere(float u1, float u2, flo
 	float cosphi = cosf(phi);
 	float sinphi = sinf(phi);
 
-	pdf = costheta * ONE_OVER_PI;
+	pdf = fabs(costheta) * ONE_OVER_PI;
 
 	float3 dir = make_float3(sintheta * cosphi, costheta, sintheta * sinphi);
 	return dir;
@@ -80,12 +80,12 @@ __host__ __device__ inline float2 ConcentricSampleDisk(float u1, float u2, float
 	if (std::abs(uOffset.x) > std::abs(uOffset.y))
 	{
 		r = uOffset.x;
-		theta = PI * 0.25f * (uOffset.y / uOffset.x);
+		theta = ONE_OVER_FOUR_PI * (uOffset.y / uOffset.x);
 	}
 	else
 	{
 		r = uOffset.y;
-		theta = PI * 0.5f - PI * 0.25f * (uOffset.x / uOffset.y);
+		theta = ONE_OVER_TWO_PI - ONE_OVER_FOUR_PI * (uOffset.x / uOffset.y);
 	}
 
 	pdf = ONE_OVER_PI;
@@ -96,7 +96,5 @@ __host__ __device__ inline float2 ConcentricSampleDisk(float u1, float u2, float
 __host__ __device__ inline float2 UniformSampleTriangle(float u1, float u2)
 {
 	float su1 = sqrtf(u1);
-	float u = 1.f - su1;
-	float v = u2 * su1;
-	return make_float2(u, v);
+	return make_float2(1.f - su1, u2 * su1);
 }
