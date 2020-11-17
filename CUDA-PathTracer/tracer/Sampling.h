@@ -11,7 +11,7 @@ __host__ __device__ inline float3 UniformSampleSphere(float u1, float u2, float&
 
 	pdf = ONE_OVER_FOUR_PI;
 
-	return make_float3(sintheta * cosphi, costheta, sintheta * sinphi);
+	return make_float3(sintheta * cosphi, sintheta * sinphi, costheta);
 }
 
 __host__ __device__ inline float3 UniformSampleHemiSphere(float u1, float u2, float3& n, float& pdf)
@@ -24,7 +24,7 @@ __host__ __device__ inline float3 UniformSampleHemiSphere(float u1, float u2, fl
 
 	pdf = ONE_OVER_TWO_PI;
 
-	float3 dir = make_float3(sintheta * cosphi, costheta, sintheta * sinphi);
+	float3 dir = make_float3(sintheta * cosphi, sintheta * sinphi, costheta);
 	return dir;
 }
 
@@ -38,7 +38,7 @@ __host__ __device__ inline float3 CosineSampleHemiSphere(float u1, float u2, flo
 
 	pdf = fabs(costheta) * ONE_OVER_PI;
 
-	float3 dir = make_float3(sintheta * cosphi, costheta, sintheta * sinphi);
+	float3 dir = make_float3(sintheta * cosphi, sintheta * sinphi, costheta);
 	return dir;
 }
 
@@ -52,7 +52,7 @@ __host__ __device__ inline float3 UniformSampleCone(float u1, float u2, float co
 
 	pdf = 1.f / (TWOPI * (1.f - costhetamax));
 
-	float3 dir = make_float3(sintheta * cosphi, costheta, sintheta * sinphi);
+	float3 dir = make_float3(sintheta * cosphi, sintheta * sinphi, costheta);
 	return dir;
 }
 
