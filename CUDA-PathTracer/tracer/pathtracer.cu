@@ -772,37 +772,25 @@ __device__ void Fr(Material material, float3 in, float3 out, float3 nor, float2 
 		if (dot(nor, in) < 0)
 			n = -n;
 
-		float c0 = fabs(dot(in, n));
-		float c1 = fabs(dot(out, n));
+		float cosThetaWo = fabs(dot(in, n));
+		float cosThetaWi = fabs(dot(out, n));
 		float3 Rd = make_float3(GetTexel(material, uv));
 		float3 Rs = material.specular;
-		float cons0 = 1 - 0.5f * c0;
-		float cons1 = 1 - 0.5f * c1;
+
+		auto pow5 = [](float v) { return (v * v) * (v * v) * v; };
+		float3 diffuse = (28.f / (23.f * PI)) * Rd * (make_float3(1.f, 1.f, 1.f) - Rs) *
+			(1 - pow5(1 - .5f * cosThetaWi)) *
+			(1 - pow5(1 - .5f * cosThetaWo));
+
 		float3 wh = normalize(in + out);
 		float D = GGX_D(wh, n, dpdu, material.alphaU, material.alphaV);
-		/*if (D < 1e-4 || u < 0.5f){
-			float3 diffuse = (28.f / (23.f * PI)) * Rd * (make_float3(1.f, 1.f, 1.f) - Rs) *
-				(1 - cons0*cons0*cons0*cons0*cons0) *
-				(1 - cons1*cons1*cons1*cons1*cons1);
-			fr = diffuse;
-			pdf = 0.5f*fabs(dot(out, n)) * ONE_OVER_PI;
-		}
-		else{
-			float3 specular = D /
-				(4.f * fabs(dot(out, wh))*Max(c0, c1))*
-				SchlickFresnel(Rs, dot(out, wh));
-
-			fr =  specular;
-			pdf = 0.5f * (D * fabs(dot(wh, n)) / (4.f * dot(in, wh)));
-		}*/
-		float3 diffuse = (28.f / (23.f * PI)) * Rd * (make_float3(1.f, 1.f, 1.f) - Rs) *
-			(1 - cons0 * cons0 * cons0 * cons0 * cons0) *
-			(1 - cons1 * cons1 * cons1 * cons1 * cons1);
 		float3 specular = D /
-			(4.f * fabs(dot(out, wh)) * Max(c0, c1)) *
+			(4.f * fabs(dot(out, wh)) * Max(cosThetaWi, cosThetaWo)) *
 			SchlickFresnel(Rs, dot(out, wh));
+
 		fr = diffuse + specular;
 		pdf = 0.5f * (fabs(dot(out, n)) * ONE_OVER_PI + D * fabs(dot(wh, n)) / (4.f * dot(in, wh)));
+
 		break;
 	}
 
