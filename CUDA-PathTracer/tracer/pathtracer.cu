@@ -48,6 +48,7 @@ __host__ __device__ inline float3 SphericalDirection(float sinTheta, float cosTh
 }
 
 __host__ __device__ inline float DielectricFresnel(float cosi, float cost, const float& etai, const float& etat) {
+
 	float Rparl = (etat * cosi - etai * cost) / (etat * cosi + etai * cost);
 	float Rperp = (etai * cosi - etat * cost) / (etai * cosi + etat * cost);
 
@@ -496,30 +497,6 @@ __device__ float3 MultipleScatter(Intersection* isect, float3 in, thrust::unifor
 //**************************bssrdf end*************
 
 //**************************BSDF Sampling**************************
-/*
-__device__ void Sample_f(const float3& woWorld, float3& wiWorld, const float2& u, float& pdf,Intersection isect, float3& fr)
-{
-	BSDF bsdf(isect);
-	float3 wi, wo = bsdf.WorldToLocal(woWorld);
-	//float3 wi=wiWorld, wo = woWorld;
-	MicrofacetReflection bxdf;
-	if (wo.z < 0) wi.z *= -1;
-	wi = CosineSampleHemiSphere(u.x,u.y, make_float3(0.04f, 0.04f, 0.04f),pdf);
-	Spectrum f = bxdf.Sample_f(wo, wi, make_float2(u.x, u.y), pdf);
-	wiWorld = bsdf.LocalToWorld(wi);
-	fr = make_float3(f.c[0], f.c[1], f.c[2]);
-
-
-	//LambertianReflection bxdf(make_float3(1.0f, 0.378676f, 0.013473f));
-	////if (wo.z < 0) wi.z *= -1;
-	//wi = CosineSampleHemiSphere(u.x,u.y, make_float3(0.04f, 0.04f, 0.04f),pdf);
-	//Spectrum f = bxdf.f(wo,wi);
-	//wiWorld = bsdf.LocalToWorld(wi);
-	//fr = make_float3(f.c[0], f.c[1], f.c[2]);
-}
-*/
-
-
 __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, float3 dpdu, float3 u, float3& out, float3& fr, float& pdf, TransportMode mode = TransportMode::Radiance) {
 	switch (material.type) {
 	case MT_LAMBERTIAN: {
@@ -542,19 +519,17 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 		break;
 
 	case MT_DIELECTRIC: {
+		// translucent
 		float3 wi = -in;
 		float3 normal = nor;
 
 		float ei = material.outsideIOR, et = material.insideIOR;
 		float cosi = dot(wi, normal);
-		bool enter = cosi < 0;
-		if (!enter) {
-			float t = ei;
-			ei = et;
-			et = t;
-		}
+		if (cosi > 0)
+			swap(et, ei);
+		float eta = ei / et;
 
-		float eta = ei / et, cost;
+		float cost;
 		float sint2 = eta * eta * (1.f - cosi * cosi);
 		cost = sqrtf(1.f - sint2 < 0.f ? 0.f : 1.f - sint2);
 		float3 rdir = Reflect(-wi, normal);
@@ -567,14 +542,16 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 		}
 
 		float fresnel = DielectricFresnel(fabs(cost), fabs(cosi), et, ei);
-		if (u.x > fresnel) {//refract
+		if (u.x > fresnel) {
+			//refract
 			out = tdir;
 			fr = material.specular / fabs(dot(out, normal)) * (1.f - fresnel);
 			if (mode == TransportMode::Radiance)
 				fr *= eta * eta;
 			pdf = 1.f - fresnel;
 		}
-		else {//reflect
+		else {
+			//reflect
 			out = rdir;
 			fr = material.specular / fabs(dot(out, normal)) * fresnel;
 			pdf = fresnel;
@@ -583,6 +560,7 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 	}
 
 	case MT_ROUGHCONDUCTOR: {
+		// Metal
 		float3 n = nor;
 		if (dot(nor, in) < 0)
 			n = -n;
@@ -662,7 +640,7 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 	}
 
 	case MT_ROUGHDIELECTRIC: {
-		float3 wi = -in;
+		float3 wo = -in;
 		float3 n = nor;
 		float3 wh = SampleGGX(material.alphaU, material.alphaV, u.x, u.y);
 		float3 uu = dpdu, ww;
@@ -670,22 +648,23 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 		wh = ToWorld(wh, uu, ww, n);
 
 		float ei = material.outsideIOR, et = material.insideIOR;
-		float cosi = dot(wi, n);
-		bool enter = cosi < 0;
-		if (!enter) {
-			float t = ei;
-			ei = et;
-			et = t;
-		}
+		float cosi = dot(wo, n);
+		if (cosi > 0)
+			swap(et, ei);
+		float eta = ei / et;
 
 		float D = GGX_D(wh, n, dpdu, material.alphaU, material.alphaV);
-		float eta = ei / et, cost;
-		cosi = dot(wi, wh);
-		float sint2 = eta * eta * (1.f - cosi * cosi);
-		cost = sqrtf(1.f - sint2 < 0.f ? 0.f : 1.f - sint2);
-		float3 rdir = Reflect(-wi, wh);
-		float3 tdir = normalize((wi - wh * cosi) * eta + (enter ? -cost : cost) * wh);
-		if (sint2 > 1.f) {//total reflection
+
+		float cosThetaI = dot(wo, wh);
+		float sin2ThetaI = fmaxf(0.f, 1.f - cosThetaI * cosThetaI);
+		float sin2ThetaT = eta * eta * sin2ThetaI;
+		float cosThetaT = sqrtf(1.f - sin2ThetaT < 0.f ? 0.f : 1.f - sin2ThetaT);
+
+		float3 rdir = Reflect(-wo, wh);
+		float3 tdir = normalize((wo - wh * cosThetaI) * eta + (cosi < 0 ? -cosThetaT : cosThetaT) * wh);
+		
+		if (sin2ThetaT > 1.f) {
+			//total reflection
 			out = rdir;
 			float G = GGX_G(in, out, n, wh, dpdu, material.alphaU, material.alphaV);
 			fr = material.specular * D * G / (4.f * fabs(dot(in, n)) * fabs(dot(out, n)));
@@ -693,8 +672,9 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 			return;
 		}
 
-		float fresnel = DielectricFresnel(fabs(cost), fabs(cosi), et, ei);
-		if (u.z > fresnel) {//refract
+		float fresnel = DielectricFresnel(fabs(cosThetaI), fabs(cosThetaT), ei, et);
+		if (u.z > fresnel) {
+			//refract
 			out = tdir;
 			float G = GGX_G(in, out, n, wh, dpdu, material.alphaU, material.alphaV);
 			float c = et * dot(out, wh) + ei * dot(in, wh);
@@ -705,7 +685,8 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 
 			pdf = (1.f - fresnel) * D * fabs(dot(wh, n)) * et * et * fabs(dot(out, wh)) / (c * c);
 		}
-		else {//reflect
+		else {
+			//reflect
 			out = rdir;
 			float G = GGX_G(in, out, n, wh, dpdu, material.alphaU, material.alphaV);
 			fr = material.specular * fresnel * D * G / (4.f * fabs(dot(in, n)) * fabs(dot(out, n)));
