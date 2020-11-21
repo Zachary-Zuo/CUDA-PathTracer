@@ -12,6 +12,53 @@ struct Vertex{
 	float3 t;
 };
 
+__host__ __device__ inline void CoordinateSystem(const float3& v1, float3& v2,
+	float3& v3) {
+	if (fabs(v1.x) > fabs(v1.y))
+		v2 = make_float3(-v1.z, 0, v1.x) / sqrtf(v1.x * v1.x + v1.z * v1.z);
+	else
+		v2 = make_float3(0, v1.z, -v1.y) / sqrtf(v1.y * v1.y + v1.z * v1.z);
+	v3 = cross(v1, v2);
+}
+
+__host__ __device__ inline float LengthSquared(const float3& v) {
+	return v.x * v.x + v.y * v.y * v.z * v.z;
+}
+
+__host__ __device__ inline float MaxComponent(const float3& v) {
+	return fmax(v.x, fmax(v.y, v.z));
+}
+
+__host__ __device__ inline int MaxDimension(const float3& v) {
+	return (v.x > v.y) ? ((v.x > v.z) ? 0 : 2) : ((v.y > v.z) ? 1 : 2);
+}
+
+__host__ __device__  inline float3 Permute(const float3& v, int x, int y, int z) {
+	float fx, fy, fz;
+	if (x == 0)
+		fx = v.x;
+	else if (x == 1)
+		fx = v.y;
+	else
+		fx = v.z;
+
+	if (y == 0)
+		fy = v.x;
+	else if (y == 1)
+		fy = v.y;
+	else
+		fy = v.z;
+
+	if (z == 0)
+		fz = v.x;
+	else if (z == 1)
+		fz = v.y;
+	else
+		fz = v.z;
+
+	return make_float3(fx, fy, fz);
+}
+
 class Triangle{
 public:
 	Vertex v1, v2, v3;
@@ -67,23 +114,32 @@ public:
 		float deltaT = 2 * (gamma(2) * maxE * maxS2 + deltaS2 * maxE + deltaE * maxS2) * abs(invDivisor);
 
 		float tt = dot(e2, s2) * invDivisor;
-		if (tt < ray.tmin+deltaT || tt > ray.tmax)
+		if (tt < ray.tmin+ deltaT || tt > ray.tmax)
 			return false;
 
 		ray.tmax = tt;
 		if (isect){
+            float3 ns = normalize(v1.n * (1.f - b1 - b2) + v2.n * b1 + v3.n * b2);
+            float3 ss = normalize(v1.t * (1.f - b1 - b2) + v2.t * b1 + v3.t * b2);
+            float3 ts = cross(ss, ns);
+            
+            if (length(ts) > 0.f)
+            {
+                ts = normalize(ts);
+                ss = cross(ts, ns);
+            }
 			isect->pos = ray(tt);
 			//不能默认文件里的法线已经归一化，这里需要手动归一化一下
-			isect->n = normalize(v1.n * (1.f - b1 - b2) + v2.n*b1 + v3.n*b2);
+            isect->shading.n = normalize(cross(ss, ts));
+            isect->n = Faceforward(ns, isect->shading.n);
 			isect->uv = v1.uv*(1.f - b1 - b2) + v2.uv*b1 + v3.uv*b2;
+            isect->dpdu = ss;
 			isect->matIdx = matIdx;
 			isect->lightIdx = lightIdx;
-			isect->dpdu = normalize(v1.t * (1.f - b1 - b2) + v2.t*b1 + v3.t*b2);
 			isect->bssrdf = bssrdfIdx;
 			isect->mediumInside = mediumInside;
 			isect->mediumOutside = mediumOutside;
 		}
-
 		return true;
 	}
 
@@ -105,7 +161,7 @@ public:
 		dir = CosineSampleHemiSphere(u.z, u.w, nor, pdfW);
 		float3 uu, ww;
 		MakeCoordinate(nor, uu, ww);
-		dir = ToWorld(dir, uu, nor, ww);
+		dir = ToWorld(dir, uu, ww,nor);
 		pdfA = 1.f / GetSurfaceArea();
 	}
 };
