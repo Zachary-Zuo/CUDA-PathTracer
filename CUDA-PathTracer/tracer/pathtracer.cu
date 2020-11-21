@@ -697,7 +697,6 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 	}
 }
 
-//__device__ void Fr(Material material, float3 in, float3 out, float3 nor, float2 uv, float3 dpdu, float u, float3& fr, float& pdf){
 __device__ void Fr(Material material, float3 in, float3 out, float3 nor, float2 uv, float3 dpdu, float3& fr, float& pdf, TransportMode mode = TransportMode::Radiance) {
 	switch (material.type) {
 	case MT_LAMBERTIAN:
@@ -776,27 +775,29 @@ __device__ void Fr(Material material, float3 in, float3 out, float3 nor, float2 
 	}
 
 	case MT_ROUGHDIELECTRIC: {
-		float3 wi = -in;
+		float3 wo = -in;
 		float3 n = nor;
 		bool reflect = dot(in, n) * dot(out, n) > 0;
 
 		float ei = material.outsideIOR, et = material.insideIOR;
-		float cosi = dot(wi, n);
-		bool enter = cosi < 0;
-		if (!enter) {
-			float t = ei;
-			ei = et;
-			et = t;
-		}
+		float cosi = dot(wo, n);
+		if (cosi > 0)
+			swap(et, ei);
 
 		float3 wh = normalize(-(ei * in + et * out));
-		float eta = ei / et, cost;
-		cosi = dot(wi, wh);
-		float sint2 = eta * eta * (1.f - cosi * cosi);
-		cost = sqrtf(1.f - sint2 < 0.f ? 0.f : 1.f - sint2);
-		float fresnel = DielectricFresnel(fabs(cost), fabs(cosi), et, ei);
+		float eta = ei / et;
+
 		float D = GGX_D(wh, n, dpdu, material.alphaU, material.alphaV);
-		if (!reflect) {//refract
+
+		float cosThetaI = dot(wo, wh);
+		float sin2ThetaI = fmaxf(0.f, 1.f - cosThetaI * cosThetaI);
+		float sin2ThetaT = eta * eta * sin2ThetaI;
+		float cosThetaT = sqrtf(1.f - sin2ThetaT < 0.f ? 0.f : 1.f - sin2ThetaT);
+
+		float fresnel = DielectricFresnel(fabs(cosThetaI), fabs(cosThetaT), ei, et);
+
+		if (!reflect) {
+			//refract
 			float G = GGX_G(in, out, n, wh, dpdu, material.alphaU, material.alphaV);
 			float c = et * dot(out, wh) + ei * dot(in, wh);
 			fr = material.specular * ei * ei * D * G * (1.f - fresnel) * fabs(dot(in, wh)) * fabs(dot(out, wh)) /
