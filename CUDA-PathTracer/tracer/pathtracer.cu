@@ -8,6 +8,8 @@
 #include <thrust/random.h>
 #include <device_functions.h>
 #include <cuda_runtime.h>
+#include "BxDF.h"
+#include "BSDF.h"
 
 Camera* dev_camera;
 float3* dev_image, * dev_color;
@@ -40,6 +42,10 @@ __device__ int kernel_light_distribution_size;
 //不同场景需要不同的epsilon，不知道怎么样优雅的实现
 __device__ float kernel_epsilon;
 
+__host__ __device__ inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi)
+{
+	return{ sinTheta * cosf(phi), sinTheta * sinf(phi),cosTheta };
+}
 
 __host__ __device__ inline float DielectricFresnel(float cosi, float cost, const float& etai, const float& etat) {
 	float Rparl = (etat * cosi - etai * cost) / (etat * cosi + etai * cost);
@@ -62,35 +68,55 @@ __device__ inline float GGX_D(float3& wh, float3& normal, float3 dpdu, float alp
 	float costheta = dot(wh, normal);
 	if (costheta <= 0.f) return 0.f;
 	costheta = clamp(costheta, 0.f, 1.f);
-	float costheta2 = costheta * costheta;
-	float sintheta2 = 1.f - costheta2;
-	float costheta4 = costheta2 * costheta2;
-	float tantheta2 = sintheta2 / costheta2;
+	float cos2Theta = costheta * costheta;
+	float sin2Theta = 1.f - cos2Theta;
+	float cos4Theta = cos2Theta * cos2Theta;
+	float tantheta2 = sin2Theta / cos2Theta;
 
 	float3 uu = dpdu;
 	float3 dir = normalize(wh - costheta * normal);
 	float cosphi = dot(dir, uu);
-	float cosphi2 = cosphi * cosphi;
-	float sinphi2 = 1.f - cosphi2;
-	float sqrD = 1.f + tantheta2 * (cosphi2 / (alphaU * alphaU) + sinphi2 / (alphaV * alphaV));
-	return 1.f / (PI * alphaU * alphaV * costheta4 * sqrD * sqrD);
+	float e = tantheta2 * (cosphi * cosphi / (alphaU * alphaU) + (1.f - cosphi) / (alphaV * alphaV));
+	return 1.f / (PI * alphaU * alphaV * cos4Theta * (1 + e) * (1 + e));
+}
+
+
+__device__ inline float Lambda(float3& w, float3& normal, float3& wh, float3 dpdu, float alphaU, float alphaV) {
+	float wdn = dot(w, normal);
+	if (wdn * dot(w, wh) < 0.f)	return 0.f;
+	float sinTheta = sqrtf(clamp(1.f - wdn * wdn, 0.f, 1.f));
+	float tanTheta = sinTheta / wdn;
+	if (isinf(tanTheta)) return 0.f;
+
+	float3 uu = dpdu;
+	float3 dir = normalize(w - wdn * normal);
+	float cosPhi = dot(dir, uu);
+	float cos2Phi = cosPhi * cosPhi;
+	float sin2Phi = 1.f - cos2Phi;
+	float alpha2 = cos2Phi * (alphaU * alphaU) + sin2Phi * (alphaV * alphaV);
+	float alpha2Tan2Theta = alpha2 * tanTheta * tanTheta;
+	return (-1.f + sqrtf(1 + alpha2Tan2Theta)) / 2;
+}
+
+__device__ inline float G1(float3& w, float3& normal, float3& wh, float3 dpdu, float alphaU, float alphaV) {
+	return 1.f / 1.f + Lambda(w, normal, wh, dpdu, alphaU, alphaV);
 }
 
 __device__ inline float SmithG(float3& w, float3& normal, float3& wh, float3 dpdu, float alphaU, float alphaV) {
 	float wdn = dot(w, normal);
 	if (wdn * dot(w, wh) < 0.f)	return 0.f;
-	float sintheta = sqrtf(clamp(1.f - wdn * wdn, 0.f, 1.f));
-	float tantheta = sintheta / wdn;
-	if (isinf(tantheta)) return 0.f;
+	float sinTheta = sqrtf(clamp(1.f - wdn * wdn, 0.f, 1.f));
+	float tanTheta = sinTheta / wdn;
+	if (isinf(tanTheta)) return 0.f;
 
 	float3 uu = dpdu;
 	float3 dir = normalize(w - wdn * normal);
-	float cosphi = dot(dir, uu);
-	float cosphi2 = cosphi * cosphi;
-	float sinphi2 = 1.f - cosphi2;
-	float alpha2 = cosphi2 * (alphaU * alphaU) + sinphi2 * (alphaV * alphaV);
-	float sqrD = alpha2 * tantheta * tantheta;
-	return 2.f / (1.f + sqrtf(1 + sqrD));
+	float cosPhi = dot(dir, uu);
+	float cos2Phi = cosPhi * cosPhi;
+	float sin2Phi = 1.f - cos2Phi;
+	float alpha2 = cos2Phi * (alphaU * alphaU) + sin2Phi * (alphaV * alphaV);
+	float alpha2Tan2Theta = alpha2 * tanTheta * tanTheta;
+	return 2.f / (1.f + sqrtf(1 + alpha2Tan2Theta));
 }
 
 __device__ inline float GGX_G(float3& wo, float3& wi, float3& normal, float3& wh, float3 dpdu, float alphaU, float alphaV) {
@@ -101,32 +127,21 @@ __device__ inline float3 SampleGGX(float alphaU, float alphaV, float u1, float u
 	if (alphaU == alphaV) {
 		float costheta = sqrtf((1.f - u1) / (u1 * (alphaU * alphaV - 1.f) + 1.f));
 		float sintheta = sqrtf(1.f - costheta * costheta);
-		float phi = 2 * PI * u2;
-		float cosphi = cosf(phi);
-		float sinphi = sinf(phi);
+		float phi = TWOPI * u2;
 
-		return{
-			sintheta * cosphi,
-			costheta,
-			sintheta * sinphi
-		};
+		return SphericalDirection(sintheta, costheta, phi);
 	}
 	else {
-		float phi;
-		if (u2 <= 0.25) phi = atan(alphaV / alphaU * tan(TWOPI * u2));
-		else if (u2 >= 0.75f) phi = atan(alphaV / alphaU * tan(TWOPI * u2)) + TWOPI;
-		else phi = atan(alphaV / alphaU * tan(TWOPI * u2)) + PI;
+		float phi = atan(alphaV / alphaU * tan(TWOPI * u2 + .5f * PI));
+		if (u2 > .5f) phi += PI;
 		float sinphi = sin(phi), cosphi = cos(phi);
-		float sinphi2 = sinphi * sinphi;
-		float cosphi2 = 1.0f - sinphi2;
-		float inverseA = 1.0f / (cosphi2 / (alphaU * alphaU) + sinphi2 / (alphaV * alphaV));
-		float theta = atan(sqrt(inverseA * u1 / (1.0f - u1)));
-		float sintheta = sin(theta), costheta = cos(theta);
-		return{
-			sintheta * cosphi,
-			costheta,
-			sintheta * sinphi
-		};
+		const float alphaU2 = alphaU * alphaU, alphaV2 = alphaV * alphaV;
+		const float alpha2 = 1.0f / (cosphi * cosphi / alphaU2 + sinphi * sinphi / alphaU2);
+		float tanTheta2 = alpha2 * u1 / (1.f - u1);
+		float costheta = 1 / sqrtf(1 + tanTheta2);
+		float sintheta = sqrtf(fmax((float)0., (float)1. - costheta * costheta));
+
+		return SphericalDirection(sintheta, costheta, phi);
 	}
 }
 
@@ -150,10 +165,10 @@ __host__ __device__ inline float3 Refract(float3 in, float3 nor, float etai, flo
 	return normalize((nor * cosi - in) * eta + (enter ? -cost : cost) * nor);
 }
 
-__device__ inline float3 SchlickFresnel(float3 specular, float costheta) {
-	float3 rs = specular;
-	float c = 1.f - costheta;
-	return rs + c * c * c * c * c * (make_float3(1.f, 1.f, 1.f) - rs);
+__device__ inline float3 SchlickFresnel(float3 specular, float cosTheta) {
+	auto pow5 = [](float v) { return (v * v) * (v * v) * v; };
+	float3 Rs = specular;
+	return Rs + pow5(1.f - cosTheta) * (1 - Rs);
 }
 
 __device__ inline float PowerHeuristic(int nf, float fPdf, int ng, float gPdf) {
@@ -481,6 +496,30 @@ __device__ float3 MultipleScatter(Intersection* isect, float3 in, thrust::unifor
 //**************************bssrdf end*************
 
 //**************************BSDF Sampling**************************
+/*
+__device__ void Sample_f(const float3& woWorld, float3& wiWorld, const float2& u, float& pdf,Intersection isect, float3& fr)
+{
+	BSDF bsdf(isect);
+	float3 wi, wo = bsdf.WorldToLocal(woWorld);
+	//float3 wi=wiWorld, wo = woWorld;
+	MicrofacetReflection bxdf;
+	if (wo.z < 0) wi.z *= -1;
+	wi = CosineSampleHemiSphere(u.x,u.y, make_float3(0.04f, 0.04f, 0.04f),pdf);
+	Spectrum f = bxdf.Sample_f(wo, wi, make_float2(u.x, u.y), pdf);
+	wiWorld = bsdf.LocalToWorld(wi);
+	fr = make_float3(f.c[0], f.c[1], f.c[2]);
+
+
+	//LambertianReflection bxdf(make_float3(1.0f, 0.378676f, 0.013473f));
+	////if (wo.z < 0) wi.z *= -1;
+	//wi = CosineSampleHemiSphere(u.x,u.y, make_float3(0.04f, 0.04f, 0.04f),pdf);
+	//Spectrum f = bxdf.f(wo,wi);
+	//wiWorld = bsdf.LocalToWorld(wi);
+	//fr = make_float3(f.c[0], f.c[1], f.c[2]);
+}
+*/
+
+
 __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, float3 dpdu, float3 u, float3& out, float3& fr, float& pdf, TransportMode mode = TransportMode::Radiance) {
 	switch (material.type) {
 	case MT_LAMBERTIAN: {
@@ -491,7 +530,7 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 		out = CosineSampleHemiSphere(u.x, u.y, n, pdf);
 		float3 uu = dpdu, ww;
 		ww = cross(uu, n);
-		out = ToWorld(out, uu, n, ww);
+		out = ToWorld(out, uu, ww, n);
 		fr = make_float3(GetTexel(material, uv)) * ONE_OVER_PI;
 		break;
 	}
@@ -551,7 +590,7 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 		float3 wh = SampleGGX(material.alphaU, material.alphaV, u.x, u.y);
 		float3 uu = dpdu, ww;
 		ww = cross(uu, n);
-		wh = ToWorld(wh, uu, n, ww);
+		wh = ToWorld(wh, uu, ww, n);
 		out = Reflect(in, wh);
 		if (!SameHemiSphere(in, out, nor)) {
 			fr = { 0, 0, 0 };
@@ -571,22 +610,25 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 	}
 
 	case MT_SUBSTRATE: {
+		// sampleVisibleArea = false
 		float3 n = nor;
 		if (dot(nor, in) < 0)
 			n = -n;
 		if (u.x < 0.5) {
-			float ux = u.x * 2.f;
-			out = CosineSampleHemiSphere(ux, u.y, n, pdf);
+			u.x = min(2.f * u.x, 0x1.fffffep-1);
+			//float ux = u.x * 2.f;
+			out = CosineSampleHemiSphere(u.x, u.y, n, pdf);
 			float3 uu = dpdu, ww;
 			ww = cross(uu, n);
-			out = ToWorld(out, uu, n, ww);
+			out = ToWorld(out, uu, ww, n);
 		}
 		else {
-			float ux = (u.x - 0.5f) * 2.f;
-			float3 wh = SampleGGX(material.alphaU, material.alphaV, ux, u.y);
+			u.x = min(2 * (u.x - 0.5f), 0x1.fffffep-1);
+			//float ux = (u.x - 0.5f) * 2.f;
+			float3 wh = SampleGGX(material.alphaU, material.alphaV, u.x, u.y);
 			float3 uu = dpdu, ww;
 			ww = cross(uu, n);
-			wh = ToWorld(wh, uu, n, ww);
+			wh = ToWorld(wh, uu, ww, n);
 			out = Reflect(in, wh);
 		}
 		if (!SameHemiSphere(in, out, n)) {
@@ -594,37 +636,24 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 			pdf = 0.f;
 			return;
 		}
-		float c0 = fabs(dot(in, n));
-		float c1 = fabs(dot(out, n));
+
+		float cosThetaWo = fabs(dot(in, n));
+		float cosThetaWi = fabs(dot(out, n));
 		float3 Rd = make_float3(GetTexel(material, uv));
 		float3 Rs = material.specular;
-		float cons0 = 1 - 0.5f * c0;
-		float cons1 = 1 - 0.5f * c1;
-		/*if (u.x < 0.5f){
-			float3 diffuse = (28.f / (23.f * PI)) * Rd * (make_float3(1.f, 1.f, 1.f) - Rs) *
-				(1 - cons0*cons0*cons0*cons0*cons0) *
-				(1 - cons1*cons1*cons1*cons1*cons1);
-			fr = diffuse;
-			pdf = fabs(dot(out, n)) * ONE_OVER_PI*0.5f;
-		}
-		else{
-			float3 wh = normalize(in + out);
-			float D = GGX_D(wh, n, dpdu, material.alphaU, material.alphaV);
-			float3 specular = D /
-				(4.f * fabs(dot(out, wh))*Max(c0, c1))*
-				SchlickFresnel(Rs, dot(out, wh));
 
-			fr =  specular;
-			pdf = 0.5f * (D * fabs(dot(wh, n)) / (4.f * dot(in, wh)));
-		}*/
+		auto pow5 = [](float v) { return (v * v) * (v * v) * v; };
 		float3 diffuse = (28.f / (23.f * PI)) * Rd * (make_float3(1.f, 1.f, 1.f) - Rs) *
-			(1 - cons0 * cons0 * cons0 * cons0 * cons0) *
-			(1 - cons1 * cons1 * cons1 * cons1 * cons1);
+			(1 - pow5(1 - .5f * cosThetaWi)) *
+			(1 - pow5(1 - .5f * cosThetaWo));
+
 		float3 wh = normalize(in + out);
 		float D = GGX_D(wh, n, dpdu, material.alphaU, material.alphaV);
 		float3 specular = D /
-			(4.f * fabs(dot(out, wh)) * Max(c0, c1)) *
+			(4.f * fabs(dot(out, wh)) * Max(cosThetaWi, cosThetaWo)) *
 			SchlickFresnel(Rs, dot(out, wh));
+
+		//float G = G1(in, n, wh, dpdu, material.alphaU, material.alphaV);
 
 		fr = diffuse + specular;
 		pdf = 0.5f * (fabs(dot(out, n)) * ONE_OVER_PI + D * fabs(dot(wh, n)) / (4.f * dot(in, wh)));
@@ -638,7 +667,7 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 		float3 wh = SampleGGX(material.alphaU, material.alphaV, u.x, u.y);
 		float3 uu = dpdu, ww;
 		ww = cross(uu, n);
-		wh = ToWorld(wh, uu, n, ww);
+		wh = ToWorld(wh, uu, ww, n);
 
 		float ei = material.outsideIOR, et = material.insideIOR;
 		float cosi = dot(wi, n);
@@ -854,8 +883,8 @@ __global__ void Ao(int iter, float maxDist) {
 		n = -n;
 	float3 wi = CosineSampleHemiSphere(uniform(rng), uniform(rng), n, pdf);
 	float3 s = isect.dpdu;
-	float3 t = cross(s, n);
-	wi = ToWorld(wi, s, n, t);
+	float3 t = cross(n, s);
+	wi = ToWorld(wi, s, t, n);
 
 	float cosine = dot(wi, n);
 	Ray r(pos, wi, nullptr, kernel_epsilon, maxDist);
@@ -916,7 +945,7 @@ __global__ void Path(int iter, int maxDepth) {
 		}
 
 		//direct light with multiple importance sampling
-		if (!IsDelta(material.type)) {
+		if (true) {
 			float3 Ld = make_float3(0.f, 0.f, 0.f);
 			bool inf = false;
 			float u = uniform(rng);
@@ -948,6 +977,7 @@ __global__ void Path(int iter, int maxDepth) {
 			float3 out, fr;
 			float pdf;
 			SampleBSDF(material, -r.destination, nor, uv, dpdu, us, out, fr, pdf);
+			//Sample_f(-r.destination,out,make_float2(uniform(rng), uniform(rng)),pdf,isect,fr);
 			if (!(IsBlack(fr) || pdf == 0)) {
 				Intersection lightIsect;
 				Ray lightRay(pos, out, r.medium, kernel_epsilon);
@@ -993,6 +1023,7 @@ __global__ void Path(int iter, int maxDepth) {
 		float pdf;
 
 		SampleBSDF(material, -r.destination, nor, uv, dpdu, u, out, fr, pdf);
+		//Sample_f(-r.destination, out, make_float2(uniform(rng), uniform(rng)), pdf, isect, fr);
 		if (IsBlack(fr))
 			break;
 
@@ -2697,7 +2728,7 @@ void EndRender() {
 }
 
 void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsigned iter, bool reset, float3* output) {
-	HANDLE_ERROR(cudaMemcpy(dev_camera, camera, sizeof(Camera), cudaMemcpyHostToDevice));
+	//HANDLE_ERROR(cudaMemcpy(dev_camera, camera, sizeof(Camera), cudaMemcpyHostToDevice));
 	int block_x = 32, block_y = 4;
 	dim3 block(block_x, block_y);
 	dim3 grid(width / block.x, height / block.y);
