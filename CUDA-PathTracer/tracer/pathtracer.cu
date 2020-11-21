@@ -662,7 +662,7 @@ __device__ void SampleBSDF(Material material, float3 in, float3 nor, float2 uv, 
 
 		float3 rdir = Reflect(-wo, wh);
 		float3 tdir = normalize((wo - wh * cosThetaI) * eta + (cosi < 0 ? -cosThetaT : cosThetaT) * wh);
-		
+
 		if (sin2ThetaT > 1.f) {
 			//total reflection
 			out = rdir;
@@ -915,28 +915,25 @@ __global__ void Path(int iter, int maxDepth) {
 		}
 
 		//direct light with multiple importance sampling
-		if (true) {
+		if (!IsDelta(material.type)) {
 			float3 Ld = make_float3(0.f, 0.f, 0.f);
-			bool inf = false;
-			float u = uniform(rng);
 			float choicePdf;
-			int idx = LookUpLightDistribution(u, choicePdf);
-			if (idx == kernel_light_size) inf = true;
+			int idx = LookUpLightDistribution(uniform(rng), choicePdf);
 			float2 u1 = make_float2(uniform(rng), uniform(rng));
 			float3 radiance, lightNor;
 			Ray shadowRay;
 			float lightPdf;
-			if (!inf)
+			if (idx != kernel_light_size)
 				kernel_lights[idx].SampleLight(pos, u1, radiance, shadowRay, lightNor, lightPdf, kernel_epsilon);
 			else
 				kernel_infinite->SampleLight(pos, u1, radiance, shadowRay, lightNor, lightPdf, kernel_epsilon);
 			shadowRay.medium = r.medium;
 
+			// Compute effect of visibility for light source sample
 			if (!IsBlack(radiance) && !IntersectPrimitive(shadowRay)) {
 				float3 fr;
 				float samplePdf;
 
-				//Fr(material, -r.destination, shadowRay.destination, nor, uv, dpdu, uniform(rng), fr, samplePdf);
 				Fr(material, -r.destination, shadowRay.destination, nor, uv, dpdu, fr, samplePdf);
 
 				float weight = PowerHeuristic(1, lightPdf * choicePdf, 1, samplePdf);
@@ -947,8 +944,9 @@ __global__ void Path(int iter, int maxDepth) {
 			float3 out, fr;
 			float pdf;
 			SampleBSDF(material, -r.destination, nor, uv, dpdu, us, out, fr, pdf);
-			//Sample_f(-r.destination,out,make_float2(uniform(rng), uniform(rng)),pdf,isect,fr);
-			if (!(IsBlack(fr) || pdf == 0)) {
+
+			// Add light's contribution to reflected radiance
+			if (!IsBlack(fr) && pdf != 0) {
 				Intersection lightIsect;
 				Ray lightRay(pos, out, r.medium, kernel_epsilon);
 				if (Intersect(lightRay, &lightIsect)) {
@@ -988,12 +986,11 @@ __global__ void Path(int iter, int maxDepth) {
 			Li += beta * Ld;
 		}
 
-		float3 u = make_float3(uniform(rng), uniform(rng), uniform(rng));
+		// Sample BSDF to get new path direction
 		float3 out, fr;
 		float pdf;
 
-		SampleBSDF(material, -r.destination, nor, uv, dpdu, u, out, fr, pdf);
-		//Sample_f(-r.destination, out, make_float2(uniform(rng), uniform(rng)), pdf, isect, fr);
+		SampleBSDF(material, -r.destination, nor, uv, dpdu, make_float3(uniform(rng), uniform(rng), uniform(rng)), out, fr, pdf);
 		if (IsBlack(fr))
 			break;
 
