@@ -9,6 +9,7 @@ public:
 	float3 sigmaA, sigmaS, sigmaT;
 
 public:
+	// Compute the transmittance
 	__device__ float3 Tr(const Ray& ray, thrust::uniform_real_distribution<float>& uniform, thrust::default_random_engine& rng) const {
 		float3 c = sigmaT * (-ray.tmax);
 		return Exp(c);
@@ -48,6 +49,7 @@ public:
 
 public:
 	// Sometimes it will lead to timeout due to too deep iteration
+	// Compute the transmittance
 	__device__ float3 Tr(const Ray& ray, thrust::uniform_real_distribution<float>& uniform, thrust::default_random_engine& rng) const {
 		float sigma = dot(sigmaT, { 0.212671f, 0.715160f, 0.072169f });
 		Ray r = ray;
