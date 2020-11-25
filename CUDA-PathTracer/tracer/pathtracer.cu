@@ -940,10 +940,9 @@ __global__ void Path(int iter, int maxDepth) {
 				Ld += weight * fr * radiance * fabs(dot(nor, shadowRay.destination)) / (lightPdf * choicePdf);
 			}
 
-			float3 us = make_float3(uniform(rng), uniform(rng), uniform(rng));
 			float3 out, fr;
 			float pdf;
-			SampleBSDF(material, -r.destination, nor, uv, dpdu, us, out, fr, pdf);
+			SampleBSDF(material, -r.destination, nor, uv, dpdu, make_float3(uniform(rng), uniform(rng), uniform(rng)), out, fr, pdf);
 
 			// Add light's contribution to reflected radiance
 			if (!IsBlack(fr) && pdf != 0) {
@@ -982,7 +981,6 @@ __global__ void Path(int iter, int maxDepth) {
 					}
 				}
 			}
-
 			Li += beta * Ld;
 		}
 
@@ -1051,6 +1049,7 @@ __global__ void Volpath(int iter, int maxDepth) {
 		float2 uv = isect.uv;
 		float3 dpdu = isect.dpdu;
 
+		// Sample the participating medium, if present
 		float sampledDist;
 		bool sampledMedium = false;
 		if (r.medium) {
@@ -1061,23 +1060,21 @@ __global__ void Volpath(int iter, int maxDepth) {
 		}
 		if (IsBlack(beta)) break;
 		if (sampledMedium) {
-			//TODO:������Ҫ�Բ���
-			bool inf = false;
-			float u = uniform(rng);
 			float choicePdf;
-			int idx = LookUpLightDistribution(u, choicePdf);
-			if (idx == kernel_light_size) inf = true;
+			int idx = LookUpLightDistribution(uniform(rng), choicePdf);
 			float3 samplePos = r(sampledDist);
 			float2 u1 = make_float2(uniform(rng), uniform(rng));
 			float3 radiance, lightNor;
 			Ray shadowRay;
 			float lightPdf;
-			if (!inf)
+			if (idx != kernel_light_size)
 				kernel_lights[idx].SampleLight(samplePos, u1, radiance, shadowRay, lightNor, lightPdf, kernel_epsilon);
 			else
 				kernel_infinite->SampleLight(samplePos, u1, radiance, shadowRay, lightNor, lightPdf, kernel_epsilon);
 			shadowRay.medium = r.medium;
 			float3 tr = Tr(shadowRay, uniform, rng);
+
+			// Evaluate phase function for light sampling strategy
 			float phase, unuse;
 			r.medium->Phase(-r.destination, shadowRay.destination, phase, unuse);
 
@@ -1119,16 +1116,13 @@ __global__ void Volpath(int iter, int maxDepth) {
 			//direct light with multiple importance sampling
 			if (!IsDelta(material.type)) {
 				float3 Ld = make_float3(0.f, 0.f, 0.f);
-				bool inf = false;
-				float u = uniform(rng);
 				float choicePdf;
-				int idx = LookUpLightDistribution(u, choicePdf);
-				if (idx == kernel_light_size) inf = true;
+				int idx = LookUpLightDistribution(uniform(rng), choicePdf);
 				float2 u1 = make_float2(uniform(rng), uniform(rng));
 				float3 radiance, lightNor;
 				Ray shadowRay;
 				float lightPdf;
-				if (!inf)
+				if (idx != kernel_light_size)
 					kernel_lights[idx].SampleLight(pos, u1, radiance, shadowRay, lightNor, lightPdf, kernel_epsilon);
 				else
 					kernel_infinite->SampleLight(pos, u1, radiance, shadowRay, lightNor, lightPdf, kernel_epsilon);
@@ -1138,7 +1132,6 @@ __global__ void Volpath(int iter, int maxDepth) {
 					float3 fr;
 					float samplePdf;
 
-					//Fr(material, -r.destination, shadowRay.destination, nor, uv, dpdu, uniform(rng), fr, samplePdf);
 					Fr(material, -r.destination, shadowRay.destination, nor, uv, dpdu, fr, samplePdf);
 					float3 tr = Tr(shadowRay, uniform, rng);
 
@@ -1150,9 +1143,10 @@ __global__ void Volpath(int iter, int maxDepth) {
 				float3 out, fr;
 				float pdf;
 				SampleBSDF(material, -r.destination, nor, uv, dpdu, us, out, fr, pdf);
-				if (!(IsBlack(fr) || pdf == 0)) {
+				if (!IsBlack(fr) && pdf != 0) {
 					Intersection lightIsect;
 					Ray lightRay(pos, out, r.medium, kernel_epsilon);
+					// Add light contribution from material sampling
 					if (Intersect(lightRay, &lightIsect)) {
 						float3 p = lightIsect.pos;
 						float3 n = lightIsect.n;
@@ -2739,4 +2733,10 @@ void Render(Scene& scene, unsigned width, unsigned height, Camera* camera, unsig
 	grid.x = width / block.x;
 	grid.y = height / block.y;
 	Output << <grid, block >> > (iter, output, reset, camera->filmic, type);
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		std::string s = cudaGetErrorString(cudaStatus);
+		printf("%s\n",s);
+		__debugbreak();
+	}
 }
