@@ -19,29 +19,21 @@ public:
 		channel = channel == 3 ? 2 : channel;
 		float dist = -std::log(1 - uniform(rng)) / (&sigmaT.x)[channel];
 		dist = dist < ray.tmax ? dist : ray.tmax;
-		bool sampledMedium = dist < ray.tmax;
-		sampled = sampledMedium;
-		if (sampledMedium)
+		sampled = dist < ray.tmax;
+		if (sampled)
 			t = dist;
 
+		// Compute the transmittance and sampling density
 		float3 Tr = Exp(sigmaT * -dist);
 
-		float3 density = sampledMedium ? (sigmaT * Tr) : Tr;
+		// Return weighting factor for scattering from homogeneous medium
+		float3 density = sampled ? (sigmaT * Tr) : Tr;
 		float pdf = 0;
 		for (int i = 0; i < 3; ++i) pdf += (&density.x)[i];
 		pdf /= 3.f;
-		if (pdf == 0) {
-			pdf = 1;
-		}
+		if (pdf == 0) pdf = 1;
 
-		return sampledMedium ? (Tr * sigmaS / pdf) : Tr / pdf;
-		/*float sigma = dot(sigmaT, { 0.212671f, 0.715160f, 0.072169f });
-		float dist = Exponential(curand_uniform(&rng), sigma);
-		bool sampledMedium = dist < ray.tmax;
-		sampled = sampledMedium;
-		t = dist;
-
-		return sampledMedium ? (sigmaS / sigmaT) : {1.f, 1.f, 1.f};*/
+		return sampled ? (Tr * sigmaS / pdf) : (Tr / pdf);
 	}
 };
 
@@ -55,7 +47,7 @@ public:
 	int iterMax;
 
 public:
-	//有时候会因为迭代过于深而导致timeout
+	// Sometimes it will lead to timeout due to too deep iteration
 	__device__ float3 Tr(const Ray& ray, thrust::uniform_real_distribution<float>& uniform, thrust::default_random_engine& rng) const {
 		float sigma = dot(sigmaT, { 0.212671f, 0.715160f, 0.072169f });
 		Ray r = ray;
@@ -63,6 +55,8 @@ public:
 		float tr = 1.f;
 		float dist = 0.f;
 		int iter = iterMax;
+
+		// Perform ratio tracking to estimate the transmittance value
 		while (true) {
 			dist += -log(uniform(rng)) * invMaxDensity / sigma;
 			if (dist >= r.tmax) break;
@@ -70,16 +64,15 @@ public:
 			p = (p - p0) / d;
 			tr *= 1.f - getDensity(p) * invMaxDensity;
 
+			// when transmittance gets low, start applying Russian roulette to terminate sampling.
 			if (tr < 0.1f) {
 				float q = 1.f - tr;
 				if (uniform(rng) < q) return{ 0.f, 0.f, 0.f };
 				tr /= (1.f - q);
 			}
 
-			if (--iter == 0)
-				break;
+			if (--iter == 0)break;
 		}
-
 		return{ tr, tr, tr };
 	}
 
@@ -89,6 +82,8 @@ public:
 		float3 d = p1 - p0;
 		float dist = 0.f;
 		int iter = iterMax;
+
+		// Run delta-tracking iterations to sample a medium interaction
 		while (true) {
 			dist += -log(uniform(rng)) * invMaxDensity / sigma;
 			if (dist >= r.tmax) break;
@@ -111,7 +106,7 @@ public:
 
 private:
 	__device__ float getDensity(float3& p) const {
-		float3 ps = make_float3(p.x * nx, p.y * ny, p.z * nz);
+		float3 ps = make_float3(p.x * nx - .5f, p.y * ny - .5f, p.z * nz - .5f);
 		float3 psi = make_float3(floor(ps.x), floor(ps.y), floor(ps.z));
 		float3 delta = ps - psi;
 		float d00 = lerp(d(psi), d(psi + make_float3(1, 0, 0)), delta.x);
@@ -146,7 +141,6 @@ public:
 		Heterogeneous heterogeneous;
 	};
 
-
 	__device__ void SamplePhase(float2 u, float3& dir, float& phase, float& pdf) const {
 		if (g == 0) {
 			phase = ONE_OVER_FOUR_PI;
@@ -154,8 +148,9 @@ public:
 			return;
 		}
 
-		//hg
+		// HenyeyGreenstein Method Definitions
 		float costheta;
+		// Compute $\cos \theta$ for Henyey--Greenstein sample
 		if (fabs(g) < 1e-3)
 			costheta = 1.f - 2.f * u.x;
 		else {
@@ -163,12 +158,14 @@ public:
 			costheta = (1.f + g * g - sqrtTerm * sqrtTerm) / (2.f * g);
 		}
 
+		// Compute direction for Henyey--Greenstein sample
 		float sintheta = sqrt(1.f - costheta * costheta);
 		float phi = TWOPI * u.y;
 		float sinphi = sin(phi), cosphi = cos(phi);
-		dir = make_float3(sintheta * cosphi, costheta, sintheta * sinphi);
+		dir = make_float3(sintheta * cosphi, sintheta * sinphi, costheta);
 		float cubicTerm = (1.f + g * g - 2.f * g * costheta);
-		phase = ONE_OVER_FOUR_PI * (1.f - g * g) / sqrt(cubicTerm * cubicTerm * cubicTerm);
+		// PhaseHG
+		phase = ONE_OVER_FOUR_PI * (1.f - g * g) / (cubicTerm * sqrt(cubicTerm));
 		pdf = phase;
 	}
 
@@ -179,7 +176,7 @@ public:
 			return;
 		}
 
-		//hg
+		// HenyeyGreenstein Method Definitions
 		float costheta = dot(in, out);
 		float cubicTerm = (1.f + g * g - 2.f * g * costheta);
 		phase = ONE_OVER_FOUR_PI * (1.f - g * g) / sqrt(cubicTerm * cubicTerm * cubicTerm);
