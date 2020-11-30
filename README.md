@@ -20,15 +20,24 @@ CUDA-based physical renderer with editor
 
 - Lambertian
 - Mirror
+- Substrate
 - Dielectric
 - Rough Conductor
-- substrate
+- Rough Dielectric
 
 
 
-### Tracer
+### Integrators
 
+- Ambient Occlusion
 - Path tracing
+- Volume Path Tracing
+
+
+
+### Other
+
+- Multiple importance sampling
 
 
 
